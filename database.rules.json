@@ -1,0 +1,20 @@
+{
+    "rules": {
+        "matching": {
+            ".read": true,
+            ".write": true
+        },
+        "users": {
+            ".read": true,
+            ".write": "auth.uid != null",
+            "$uid": {
+                ".read": "auth.uid != null",
+                ".write": "$uid === auth.uid",
+                "conversations": {
+                    ".read": "auth.uid != null",
+                    ".write": "auth.uid != null"
+                }
+            }
+        }
+    }
+}

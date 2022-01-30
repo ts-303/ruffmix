@@ -1,0 +1,35 @@
+** changed preview track height to full size (96px) using isChild param, does this look right everywhere?
+** some unused vars are commented out, ensure everything runs correctly even with these removed
+** For configuring rules: 
+    - changed uploadtrack to prefix storage w/ uid
+    - changed accountview to load from newtrackfile with currentFolder[track].userID + '/audio/'
+    - changed Match.js to load matched track from audiofile={matchObj.matchID + '/audio/' + matchObj.folder + '/' + matchObj.track}
+        and in creatematchsession: storageRef = firebase.storage().ref().child(this.state.currentUserID + '/audio/' + newFolderID + '/' + newTrackID);
+        and in finishreview: audiofile={this.state.currentUserID + '/audio/' + this.state.currentFolderID + '/' + this.state.currentTrackID}
+
+** fixed accountview user tracks section according to privacy settings
+
+
+/// *PROBLEMS*
+- !! Interrupting upload during matching deletes the entire users directory in rtdb !! **occurs when creating new acc while testing matching?
+- During matching, comment obj is not aligning to the correct side (commenters on left, author comments on right)
+
+- [OK] on Accountview: a is null error, ensure user is loaded in time before page refresh?
+- [OK] Clicking on waveform after clicking timestamp to play region causes toggleplay mismatch
+- [OK] Typing New message without having another user selected causes anon convo creation, clicking causes page to crash (disable message input w/out convo?)
+
+- Set timeout routines for all crucial db/storage calls
+- On login, User convos section does not populate title of final button (firebase ref problem?)
+- After uploading track via matching, then creating new version of track normally, accountview has problems loading audio (unless refresh page)
+- AccountView: on componentdidmount(), if a property in userParse doesn't exist, causes crash (apply property check)
+- [LATER] Make sure click and drag converts to mm:ss format as well as m:ss *****
+- [LATER] BrowseUsers: limit users ref to 9 users so it isn't reading entire users db
+- [LATER] Make sure user avatar is used in all locations of <AccountCircle>
+
+/// *IMPROVEMENTS*
+
+    - Comment objects need to show small avatar
+    - Click and drag preview regions change the actual timestamp in text field, clear regions removes timestamp 
+    - Click and drag automatically un-collapses comments
+    - auto scroll messages to the bottom (smoothscroll js function?)
+    - Use ButtonGroup component on AccountView Send Message/Add to contacts area

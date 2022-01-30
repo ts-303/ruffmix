@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Window/Match.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Window/Match.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Box, Button, CardHeader, Checkbox, CircularProgress, Collapse, FormControlLabel, Grow, IconButton, Input, InputAdornment, Slide, Step, StepLabel, Stepper, TextField, Tooltip } from "@material-ui/core";
+import NavigateBeforeRoundedIcon from '@material-ui/icons/NavigateBeforeRounded';
+import NavigateNextRoundedIcon from '@material-ui/icons/NavigateNextRounded';
+import PublishIcon from '@material-ui/icons/Publish';
+import React from "react";
+import firebase from '../../firebase';
+import { NewAccount } from "./NewAccount";
+import WaveForm from "./WaveForm";
+
+/**
+ * Titles for describing the steps 
+ */
+const steps = ['Upload Your Track', 'Describe This Track', 'Identify Problem Areas', 'Now Matching . . .', 'Review', 'Your Feedback'];
+
+/**
+ * Definition for the initial state which is used if Matching is repeated
+ */
+const initialState = {
+    activeStep: 0,
+    inProp: true,
+    slideStep: 0,
+    matching: false,
+    sectionValid: false,
+    matchingStatus: '',
+    trackPreviewPlayer: '',
+    trackName: '',
+    trackDescription: '',
+    trackMetaData: ['', '', '', ''],
+    userID: '',
+    audioFile: '',
+    metaDataOther: '',
+    other: false,
+    trackIsPublic: false,
+    trackMatchPlayer: '',
+    mFolderID: '',
+    mTrackID: '',
+    mTrackName: '',
+    mMetaData: ['', '', '', ''],
+    mTrackDescription: '',
+    currentUserID: '',
+    currentFolderID: '',
+    currentTrackID: '',
+    reviewedTrackPlayer: '',
+    matchedUserID: '',
+    keepTracks: false,
+    anonymousID: '',
+};
+
+/**
+ * The Match window allows two users to exchange a work-in-progress track for immediate feedback.
+ */
+export class Match extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = initialState;
+
+        this.handleFileSelect = this.handleFileSelect.bind(this);
+        this.handleMatch = this.handleMatch.bind(this);
+        this.finishReview = this.finishReview.bind(this);
+        this.drawMatchTrack = this.drawMatchTrack.bind(this);
+        this.cleanup = this.cleanup.bind(this);
+        this.matchAgain = this.matchAgain.bind(this);
+
+        this.fileInput = React.createRef();
+        this.previewRef = React.createRef();
+    }
+
+    /**
+     * Calls the cleanup function, initializes state, and detaches the firebase child_added callback
+     */
+    componentWillUnmount() {
+        this.cleanup();
+        this.state = initialState;
+        firebase.database().ref('matching/').off('child_added');
+    }
+
+    /**
+     * @returns A promise to remove matching data on firebase when necessary
+     */
+    cleanup = () => {
+        return new Promise((resolve, reject) => {
+            if (this.state.currentUserID) {
+                firebase.database().ref('matching/' + this.state.currentUserID).remove().catch((error) => {
+                    console.log('Matching DB cleanup error: ' + error);
+                });
+
+                if (!this.props.router.getUserID() &amp;&amp; !this.state.keepTracks) {
+                    firebase.database().ref('users/' + this.state.currentUserID).remove().catch(function (error) {
+                        console.log("User DB cleanup fail: " + error.message)
+                    });
+                }
+
+                if (!this.state.trackIsPublic &amp;&amp; !this.state.keepTracks) {
+                    firebase.database().ref('users/' + this.state.currentUserID + '/audio/'
+                        + this.state.currentFolderID + '/' + this.state.currentTrackID).remove().catch(function (error) {
+                            console.log("User DB cleanup fail: " + error.message)
+                        });
+
+                    firebase.storage().ref().child('audio/' + this.state.currentFolderID + '/' + this.state.currentTrackID).delete().catch((error) => {
+                        console.log('Storage cleanup error: ' + error);
+                    });
+                }
+            }
+        })
+    }
+
+    /**
+     * Begins a new matching session
+     */
+    matchAgain = () => {
+        this.cleanup().then(
+            this.props.router.updateContent(&lt;Match router={this.props.router} user={this.props.router.getUserID()} />)
+        ).catch((error) => {
+            console.log('Cleanup error: ' + error);
+        });
+    }
+
+    backButton = (event) => {
+        const { activeStep } = this.state;
+
+        if (activeStep > 0) {
+            this.setState({
+                activeStep: activeStep - 1,
+                inProp: true,
+            }, () => { this.checkSection(); this.setState({ inProp: false }); });
+        }
+
+        if (event) event.preventDefault();
+    }
+
+    nextButton = (event) => {
+        const { activeStep } = this.state;
+
+        if (activeStep &lt; steps.length - 1) {
+            this.setState({
+                activeStep: activeStep + 1,
+                inProp: true,
+            }, () => this.setState({ inProp: false, sectionValid: false }));
+        }
+
+        if (event) event.preventDefault();
+    }
+
+    /**
+     * Checks to see if a step's required fields are filled
+     */
+    checkSection() {
+        if (this.state.activeStep === 1 &amp;&amp; this.state.trackName
+            || this.state.activeStep === 0 &amp;&amp; this.state.trackPreviewPlayer)
+            this.setState({ sectionValid: true });
+    }
+
+    handleChange = (event) => {
+        if (event.target.name.match('Mixing|Mastering|Arrangement')) {
+            var metaDataArr = [...this.state.trackMetaData];
+            const index = parseInt(event.target.id);
+            if (event.target.checked) metaDataArr[index] = event.target.name;
+            else metaDataArr[index] = '';
+
+            this.setState({
+                trackMetaData: metaDataArr,
+            })
+        }
+
+        else {
+            this.setState({
+                ...this.state,
+                [event.target.name]: event.target.value,
+            }, () => {
+                if (event.target.name.match('metaDataOther')) {
+                    var metaDataArr = [...this.state.trackMetaData]
+                    metaDataArr[3] = this.state.metaDataOther;
+                    this.setState({ trackMetaData: metaDataArr });
+                }
+                this.checkSection();
+            })
+        }
+    }
+
+    handleFileSelect = (event) => {
+        if (this.fileInput.current.files[0] !== this.state.audioFile) {
+            this.setState({
+                audioFile: this.fileInput.current.files[0]
+            }, () => this.drawPreview(this.fileInput.current.files[0]))
+        }
+
+        event.preventDefault();
+    }
+
+    /**
+     * Draws a Waveform preview of the track to be shared
+     */
+    drawPreview = (args) => {
+        const waveObj = &lt;WaveForm
+            isChild={false}
+            preview={true}
+            router={this.props.router}
+            audiofile={args}
+            trackname={this.state.trackName}
+            metadata={[]}
+            description=''
+        />;
+
+        this.setState({
+            trackPreviewPlayer: ''
+        }, () => this.setState({ trackPreviewPlayer: waveObj, sectionValid: true }))
+    }
+
+    /**
+     * Draws the Waveform of a track obtained from a matched user
+     */
+    drawMatchTrack = () => {
+
+        const matchingRef = firebase.database().ref('matching/' + this.state.currentUserID + '/matchObject');
+
+        let matchingListener = matchingRef.on('value', (snapshot) => {
+            const matchObj = snapshot.val();
+
+            const usersRef = firebase.database().ref('users/' + matchObj.matchID + '/audio/' + matchObj.folder + '/' + matchObj.track);
+
+            let usersListener = usersRef.on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const trackData = snapshot.val();
+
+                    const waveObj = &lt;WaveForm
+                        isChild={false}
+                        router={this.props.router}
+                        audiofile={'audio/' + matchObj.folder + '/' + matchObj.track}
+                        trackname={trackData.trackname}
+                        metadata={trackData.metadata}
+                        description={trackData.description}
+                        folderID={matchObj.folder}
+                        trackID={matchObj.track}
+                        userID={matchObj.matchID}
+                    />;
+
+                    this.setState({
+                        trackMatchPlayer: waveObj,
+                        mFolderID: trackData.folderID,
+                        mTrackID: trackData.trackID,
+                        mTrackName: trackData.trackname,
+                        mMetaData: trackData.metadata,
+                        mTrackDescription: trackData.description,
+                    });
+
+                    matchingRef.off('value', matchingListener);
+                    usersRef.off('value', usersListener);
+
+                    firebase.database().ref('matching/' + this.state.currentUserID).remove().catch(function (error) {
+                        console.log("Matching DB cleanup fail: " + error.message)
+                    });
+
+                }
+            });
+        });
+    }
+
+    /**
+     * @summary Begins a new matching session. 
+     * @description Firebase contains a /matching/ directory which queues new users waiting for a match. In this function, a firebase listener
+     * waits for a new child to be added in /matching/ whose user ID does not belong to the current user. When one is found, a 'matchObject' is added to that user's
+     * directory in /matching/. For the user that just queued, a listener is added to their own /matching/ directory looking for a matchObject created from a
+     * waiting user. When one is found, this completes the session and the two users exchange tracks and account info when available. Users can match anonymously
+     * when not using a registered account.
+     */
+    handleMatch = (event) => {
+        this.nextButton();
+
+        var newSessionID = '';
+
+        function anonymousAuth() {
+            firebase.auth().signInAnonymously().then(() => {
+                firebase.auth().onAuthStateChanged((user) => {
+                    //this.props.router.setUser(user);
+                    newSessionID = user.uid;
+                    this.setState({ anonymousID: user.uid });
+                    createMatchSession();
+                });
+            })
+        }
+
+        function createMatchSession() {
+
+            var newFolderID = '';
+            var fRef = firebase.database().ref().push();
+            newFolderID = fRef.key;
+
+            var tRef = firebase.database().ref().push();
+            var newTrackID = tRef.key;
+
+            // Use hooks to set/clear timeout as needed 
+            // var matchTimeOut = setTimeout(() => {
+            //     alert('Session timeout');
+            //     this.matchAgain();
+            // }, 5000);
+
+            if (newSessionID) {
+                this.setState({
+                    matchingStatus: 'Uploading your track . . .',
+                    currentUserID: newSessionID,
+                    currentFolderID: newFolderID,
+                    currentTrackID: newTrackID,
+                }, () => {
+                    const storageRef = firebase.storage().ref().child('audio/' + newFolderID + '/' + newTrackID);
+                    var newAudioFile = this.state.audioFile;
+
+                    storageRef.put(newAudioFile).then((snapshot) => {
+                        if (this.state.currentUserID) {
+                            console.log('File upload success');
+
+                            this.setState({ matchingStatus: 'Searching for match . . .' });
+
+                            firebase.database().ref('users/' + this.state.currentUserID + '/audio/' + newFolderID + '/' + newTrackID).set({
+                                folderID: newFolderID,
+                                trackID: newTrackID,
+                                userID: this.state.currentUserID,
+                                trackname: this.state.trackName,
+                                description: this.state.trackDescription,
+                                metadata: this.state.trackMetaData,
+                                commentdata: ['']
+                            }).then(() => {
+                                firebase.database().ref('matching/' + this.state.currentUserID).set({
+                                    test: true
+                                }).catch((error) => {
+                                    console.log('Matching queue fail - ' + error);
+                                });
+
+                                const matchData = {
+                                    matchID: this.state.currentUserID,
+                                    folder: newFolderID,
+                                    track: newTrackID
+                                };
+
+                                const newMatchUserRef = firebase.database().ref('matching/').limitToLast(1)
+
+                                let newMatchUserListener = newMatchUserRef.on('child_added', (data) => {
+                                    if (data.key !== this.state.currentUserID) {
+                                        firebase.database().ref('matching/' + data.key).update({ matchObject: matchData });
+                                    }
+                                });
+
+                                const currentUserRef = firebase.database().ref('matching/' + this.state.currentUserID);
+
+                                let currentUserListener = currentUserRef.on('child_added', (data) => {
+                                    if (data.key === 'matchObject') {
+                                        const matchedUser = firebase.database().ref('matching/' + data.child('matchID').val());
+                                        if (data.child('matchID').val() !== this.state.currentUserID) {
+                                            matchedUser.update({ matchObject: matchData });
+                                            this.setState({ matchedUserID: data.child('matchID').val() });
+                                            console.log('Matched user ID: ' + this.state.matchedUserID);
+
+                                            newMatchUserRef.off('child_added', newMatchUserListener);
+                                            currentUserRef.off('child_added', currentUserListener);
+
+                                            this.nextButton();
+                                            this.drawMatchTrack();
+                                        }
+                                    }
+                                });
+                            }).catch((error) => {
+                                alert('Matching fail' + error);
+                            });
+                        }
+                        else {
+                            console.log('Match session creation fail - session canelled during upload');
+                            storageRef.delete();
+                        }
+                    }).catch((error) => {
+                        alert('File Upload fail' + error);
+                    });
+                });
+            }
+            else {
+                alert('Cannot match - user auth failure');
+                this.matchAgain();
+            }
+        }
+
+        createMatchSession = createMatchSession.bind(this);
+        anonymousAuth = anonymousAuth.bind(this);
+
+        if (this.props.router.getUserID()) {
+            newSessionID = this.props.router.getUserID();
+            createMatchSession();
+        }
+        else {
+            anonymousAuth()
+        };
+
+        event.preventDefault();
+    }
+
+    /**
+     * Finishes the matching session and shows the current user's reviewed track
+     */
+    finishReview = (event) => {
+
+        const reviewedTrack = &lt;WaveForm
+            isChild={false}
+            controller={this}
+            router={this.props.router}
+            audiofile={'audio/' + this.state.currentFolderID + '/' + this.state.currentTrackID}
+            trackname={this.state.trackName}
+            metadata={this.state.trackMetaData}
+            description={this.state.trackDescription}
+            folderID={this.state.currentFolderID}
+            trackID={this.state.currentTrackID}
+            userID={this.state.currentUserID}
+        />;
+
+        this.setState({ reviewedTrackPlayer: reviewedTrack }, this.nextButton());
+
+        event.preventDefault();
+    }
+
+    render() {
+        return (
+            &lt;Grow in={true}>
+                &lt;Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
+                    &lt;CardHeader title="Instant Matching" />
+                    &lt;Box height='30%' width='100%' display='flex' flexDirection='column' justifyContent='center' alignItems='center'>
+                        &lt;div hidden={(this.state.slideStep >= 3) ? true : false}>
+                            &lt;Collapse in={this.state.trackPreviewPlayer}>
+                                &lt;Box>{this.state.trackPreviewPlayer}&lt;/Box>
+                            &lt;/Collapse>
+                        &lt;/div>
+                    &lt;/Box>
+
+                    &lt;Box display='flex' flexDirection='row' width='70%' justifyContent='space-between' alignSelf='center' alignItems='center'>
+                        &lt;Box>
+                            &lt;div style={{ visibility: (this.state.activeStep === 0 || this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
+                                &lt;IconButton
+                                    onClick={() => this.backButton()}
+                                >
+                                    &lt;NavigateBeforeRoundedIcon fontSize='large'/>
+                                &lt;/IconButton>
+                            &lt;/div>
+                        &lt;/Box>
+                        &lt;Box display='flex' flexDirection='column' alignContent='center'>
+                            &lt;h2>{steps[this.state.activeStep]}&lt;/h2>
+                        &lt;/Box>
+                        &lt;Box>
+                            &lt;Tooltip
+                                title='Please fill out all required fields'
+                                arrow={true}
+                                placement='right'
+                                disableHoverListener={this.state.sectionValid}
+                            >
+                                &lt;div style={{ visibility: (this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
+                                    &lt;IconButton
+                                        onClick={() => this.nextButton()}
+                                        disabled={!this.state.sectionValid}
+                                    >
+                                        &lt;NavigateNextRoundedIcon fontSize='large'/>
+                                    &lt;/IconButton>
+                                &lt;/div>
+                            &lt;/Tooltip>
+                        &lt;/Box>
+                    &lt;/Box>
+
+                    &lt;Box display='flex' height='70%' width='50%' flexDirection='column' justifyContent='center' alignSelf='center' mx={5}>
+                        &lt;Slide
+                            in={this.state.inProp}
+                            onExited={() => this.setState({ inProp: !this.state.inProp, slideStep: this.state.activeStep })}
+                            direction="up"
+                        >
+                            &lt;div>
+                                &lt;div hidden={(this.state.slideStep === 0 ? false : true)}>
+                                    &lt;Box display='flex' flexDirection='column'>
+                                        &lt;Input
+                                            type="file"
+                                            inputProps={{ ref: this.fileInput, accept: 'audio/flac, audio/m4a, audio/wav, audio/mp3, audio/aac' }}
+                                            required={true}
+                                            onChange={this.handleFileSelect}
+                                            startAdornment={
+                                                &lt;InputAdornment>
+                                                    &lt;PublishIcon />
+                                                &lt;/InputAdornment>
+                                            }
+                                        />
+                                    &lt;/Box>
+                                &lt;/div>
+                                &lt;div hidden={(this.state.slideStep === 1 ? false : true)}>
+                                    &lt;Box display='flex' flexDirection='column'>
+                                        &lt;TextField
+                                            label="Track Name"
+                                            name='trackName'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            required='true'
+                                            value={this.state.trackName}
+                                            onChange={this.handleChange}
+                                        />
+                                        &lt;TextField
+                                            label="Description"
+                                            name='trackDescription'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            value={this.state.trackDescription}
+                                            onChange={this.handleChange}
+                                        />
+                                    &lt;/Box>
+                                &lt;/div>
+                                &lt;div hidden={(this.state.slideStep === 2 ? false : true)}>
+                                    &lt;Box display='flex' flexDirection='column'>
+                                        &lt;div>
+                                            &lt;FormControlLabel
+                                                control={&lt;Checkbox id='0' name="Mixing" onChange={this.handleChange} />}
+                                                label="Mixing"
+                                            />
+                                            &lt;FormControlLabel
+                                                control={&lt;Checkbox id='1' name="Mastering" onChange={this.handleChange} />}
+                                                label="Mastering"
+                                            />
+                                            &lt;FormControlLabel
+                                                control={&lt;Checkbox id='2' name="Arrangement" onChange={this.handleChange} />}
+                                                label="Arrangement"
+                                            />
+                                            &lt;FormControlLabel
+                                                control={&lt;Checkbox name="other" onClick={() => { this.setState({ other: !this.state.other }) }} />}
+                                                label="Other"
+                                            />
+                                            &lt;Collapse in={this.state.other ? true : false} display='flex' flexDirection='column'>
+                                                &lt;div>Please specify "Other" tag (Limit 12 characters):&lt;/div>
+                                                &lt;TextField
+                                                    name='metaDataOther'
+                                                    placeholder='. . .'
+                                                    size='medium'
+                                                    inputProps={{ maxLength: 12 }}
+                                                    value={this.state.metaDataOther}
+                                                    onChange={this.handleChange}
+                                                />
+                                            &lt;/Collapse>
+                                            &lt;div hidden={(this.props.router.getUserID() ? false : true)}>
+                                                &lt;FormControlLabel
+                                                    control={
+                                                        &lt;Checkbox
+                                                            name="trackIsPublic"
+                                                            onClick={() => { this.setState({ trackIsPublic: !this.state.trackIsPublic }) }}
+                                                        />
+                                                    }
+                                                    label="Save track to account"
+                                                />
+                                            &lt;/div>
+                                        &lt;/div>
+                                        &lt;Button onClick={this.handleMatch} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Match&lt;/Button>
+                                    &lt;/Box>
+                                &lt;/div>
+                                &lt;div hidden={(this.state.slideStep === 3 ? false : true)}>
+                                    &lt;Box display='flex' flexDirection='column' alignItems='center'>
+                                        &lt;h2>{this.state.matchingStatus}&lt;/h2>
+                                        &lt;CircularProgress />
+                                    &lt;/Box>
+                                &lt;/div>
+                                &lt;div hidden={(this.state.slideStep === 4 ? false : true)}>
+                                    &lt;Box display='flex' flexDirection='column'>
+                                        Please offer constructive criticism.
+                                        {this.state.trackMatchPlayer}
+                                        &lt;Button onClick={this.finishReview} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Continue&lt;/Button>
+                                    &lt;/Box>
+                                &lt;/div>
+                                &lt;div hidden={(this.state.slideStep === 5 ? false : true)}>
+                                    &lt;Box display='flex' flexDirection='column'>
+                                        Your feedback is here:
+                                        {this.state.reviewedTrackPlayer}
+                                        &lt;Button onClick={this.matchAgain} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Match Again&lt;/Button>
+                                        &lt;div hidden={(this.props.router.getUserID() ? true : false)}>
+                                            &lt;Button
+                                                onClick={() => {
+                                                    this.setState({ keepTracks: true },
+                                                        () => this.props.router.updateContent(&lt;NewAccount router={this.props.router} anonymousID={this.state.anonymousID} />))
+                                                }
+                                                }
+                                                variant='outlined'
+                                                className={this.props.router.getStyles('b_MainWindow')}
+                                            >
+                                                Create An Account
+                                            &lt;/Button>
+                                        &lt;/div>
+                                    &lt;/Box>
+                                &lt;/div>
+                            &lt;/div>
+                        &lt;/Slide>
+                    &lt;/Box>
+                    &lt;Stepper
+                        activeStep={this.state.activeStep}
+                        alternativeLabel
+                        size='small'
+                    >
+                        {steps.map((label) => (
+                            &lt;Step key={label}>
+                                &lt;StepLabel orientation="vertical">{label}&lt;/StepLabel>
+                            &lt;/Step>
+                        ))}
+                    &lt;/Stepper>
+
+                &lt;/Box>
+            &lt;/Grow>
+        );
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AccountSettings.html">AccountSettings</a></li><li><a href="AccountView.html">AccountView</a></li><li><a href="BrowseUsers.html">BrowseUsers</a></li><li><a href="CommentObject.html">CommentObject</a></li><li><a href="Conversations.html">Conversations</a></li><li><a href="Header.html">Header</a></li><li><a href="Introduction.html">Introduction</a></li><li><a href="Login.html">Login</a></li><li><a href="MainWindowController.html">MainWindowController</a></li><li><a href="Match.html">Match</a></li><li><a href="module.html#.exports">exports</a></li><li><a href="NewAccount.html">NewAccount</a></li><li><a href="ThreeBackground.html">ThreeBackground</a></li><li><a href="UploadTrack.html">UploadTrack</a></li><li><a href="WaveForm.html">WaveForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ActiveConvoSection">ActiveConvoSection</a></li><li><a href="global.html#audiofile">audiofile</a></li><li><a href="global.html#comment">comment</a></li><li><a href="global.html#CommentSection">CommentSection</a></li><li><a href="global.html#componentDidMount">componentDidMount</a></li><li><a href="global.html#controller">controller</a></li><li><a href="global.html#description">description</a></li><li><a href="global.html#folderID">folderID</a></li><li><a href="global.html#initialState">initialState</a></li><li><a href="global.html#isChild">isChild</a></li><li><a href="global.html#MakeWave">MakeWave</a></li><li><a href="global.html#MessageSection">MessageSection</a></li><li><a href="global.html#metadata">metadata</a></li><li><a href="global.html#MetaDataSection">MetaDataSection</a></li><li><a href="global.html#newVersionFolder">newVersionFolder</a></li><li><a href="global.html#player">player</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#steps">steps</a></li><li><a href="global.html#trackID">trackID</a></li><li><a href="global.html#trackname">trackname</a></li><li><a href="global.html#user">user</a></li><li><a href="global.html#userID">userID</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Tue Jan 25 2022 17:51:42 GMT-0500 (Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

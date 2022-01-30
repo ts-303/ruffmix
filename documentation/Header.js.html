@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Header.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Header.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Button, Divider, IconButton, Link } from "@material-ui/core";
+import { AccountCircle } from "@material-ui/icons";
+import PublishIcon from '@material-ui/icons/Publish';
+import React from "react";
+import './Header.css';
+import HeaderMenu from './HeaderMenu';
+import { AccountSettings } from "./Window/AccountSettings";
+import { AccountView } from "./Window/AccountView";
+import { BrowseUsers } from "./Window/BrowseUsers";
+import { Introduction } from "./Window/Introduction";
+import { Login } from './Window/Login';
+import { Match } from './Window/Match';
+import { UploadTrack } from "./Window/UploadTrack";
+import PropTypes from 'prop-types';
+
+/**
+ * The Header Component is the basic header bar for navigation.
+ */
+export class Header extends React.Component {
+    static propTypes = {
+        /**
+         * The router component to be used, use MainWindowController for most cases
+         */
+        router: PropTypes.elementType
+    }
+
+    /**
+     * Loads the Match window to begin a matching session
+     */
+    startMatch() {
+        this.props.router.updateContent(&lt;Match router={this.props.router}/>);
+    }
+
+    /**
+     * Loads the Introduction window 
+     */
+    introduction() {
+        this.props.router.updateContent(&lt;Introduction router={this.props.router}/>);
+    }
+
+    /**
+     * Loads the Login window
+     */
+    login() {
+        this.props.router.updateContent(&lt;Login router={this.props.router}/>);
+    }
+
+    /**
+     * Loads the AccountView Window
+     */
+    accountView() {
+        this.props.router.updateContent(&lt;AccountView router={this.props.router} user={this.props.router.getUserID()}/>);
+    }
+
+    /**
+     * Loads the AccountSettings Window
+     */
+    accountSettings() {
+        this.props.router.updateContent(&lt;AccountSettings router={this.props.router} user={this.props.router.getUserID()}/>);
+    }
+
+    /**
+     * Loads the UploadTrack window
+     */
+    uploadTrack() {
+        if (this.props.router.getUserID()) this.props.router.updateContent(&lt;UploadTrack router={this.props.router}/>);
+        else this.login();
+    }
+
+    /**
+     * Loads the BrowseUsers window
+     */
+    browseUsers() {
+        this.props.router.updateContent(&lt;BrowseUsers router={this.props.router}/>);
+    }
+
+    render() {
+        
+        return(
+            &lt;body className="header-bar">
+                &lt;div className="header-left" >
+                    &lt;Button variant='outlined' className={this.props.router.getStyles('b_AccentPrimary')} onClick={() => this.startMatch()}>match now&lt;/Button>
+                    &lt;Divider className={this.props.router.getStyles('divider')} orientation='vertical'/>
+                    &lt;Button startIcon={&lt;PublishIcon/>} variant='outlined' className={this.props.router.getStyles('b_AccentSecondary')}  onClick={() => this.uploadTrack()}>upload&lt;/Button>
+                    &lt;Divider className={this.props.router.getStyles('divider')} orientation='vertical'/>
+                    &lt;Button variant='outlined' className={this.props.router.getStyles('b_AccentSecondary')}  onClick={() => this.browseUsers()}>browse users&lt;/Button>
+                &lt;/div>
+                &lt;Link color="#inherit" component="button" className="header-center" onClick={() => this.introduction()}>ruffmix&lt;/Link>
+                &lt;div className="header-right">
+                    &lt;HeaderMenu router={this.props.router} header={this} />
+                    &lt;div hidden={(this.props.router.getUserID() === '') ? false : true}>
+                        &lt;Button className={this.props.router.getStyles('b_AccentSecondary')} variant='outlined' onClick={() => this.login()}>login&lt;/Button>
+                    &lt;/div>
+                    &lt;div hidden={(this.props.router.getUserID() === '') ? true : false}>
+                        &lt;IconButton className={this.props.router.getStyles('b_AccountCircle')} onClick={() => this.accountView()}>
+                            &lt;AccountCircle />
+                        &lt;/IconButton>
+                    &lt;/div>
+                &lt;/div>
+            &lt;/body>
+        );
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AccountSettings.html">AccountSettings</a></li><li><a href="AccountView.html">AccountView</a></li><li><a href="BrowseUsers.html">BrowseUsers</a></li><li><a href="CommentObject.html">CommentObject</a></li><li><a href="Conversations.html">Conversations</a></li><li><a href="Header.html">Header</a></li><li><a href="Introduction.html">Introduction</a></li><li><a href="Login.html">Login</a></li><li><a href="MainWindowController.html">MainWindowController</a></li><li><a href="Match.html">Match</a></li><li><a href="module.html#.exports">exports</a></li><li><a href="NewAccount.html">NewAccount</a></li><li><a href="ThreeBackground.html">ThreeBackground</a></li><li><a href="UploadTrack.html">UploadTrack</a></li><li><a href="WaveForm.html">WaveForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ActiveConvoSection">ActiveConvoSection</a></li><li><a href="global.html#audiofile">audiofile</a></li><li><a href="global.html#comment">comment</a></li><li><a href="global.html#CommentSection">CommentSection</a></li><li><a href="global.html#componentDidMount">componentDidMount</a></li><li><a href="global.html#controller">controller</a></li><li><a href="global.html#description">description</a></li><li><a href="global.html#folderID">folderID</a></li><li><a href="global.html#initialState">initialState</a></li><li><a href="global.html#isChild">isChild</a></li><li><a href="global.html#MakeWave">MakeWave</a></li><li><a href="global.html#MessageSection">MessageSection</a></li><li><a href="global.html#metadata">metadata</a></li><li><a href="global.html#MetaDataSection">MetaDataSection</a></li><li><a href="global.html#newVersionFolder">newVersionFolder</a></li><li><a href="global.html#player">player</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#steps">steps</a></li><li><a href="global.html#trackID">trackID</a></li><li><a href="global.html#trackname">trackname</a></li><li><a href="global.html#user">user</a></li><li><a href="global.html#userID">userID</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Tue Jan 25 2022 17:51:42 GMT-0500 (Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

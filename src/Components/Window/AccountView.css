@@ -1,0 +1,41 @@
+.account-view {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 2%;
+    height: 100%;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+    height: 40%;
+}
+
+.user-track {
+    display: flex;
+    flex-direction: column;
+    text-align: flex-start;
+    justify-content: flex-start;
+    margin-left: 2%;
+    margin-bottom: 4%;
+    width: 70%;
+    overflow-y: auto;
+}
+
+.userName {
+    font-family: "Century Gothic", Futura, sans-serif;
+    font-size: 24px;
+}
+
+.userRole {
+    font-family: "Century Gothic", Futura, sans-serif;
+    font-weight: lighter;
+    font-size: 18px;
+}
+
+.MuiTableCell-root {
+    font-family: "Century Gothic", Futura, sans-serif;
+    font-size: 16px;
+}

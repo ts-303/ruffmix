@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Window/CommentObject.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Window/CommentObject.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Box, Chip, IconButton, Paper } from '@material-ui/core';
+import { AccountCircleOutlined } from '@material-ui/icons';
+import React from 'react';
+import firebase from "../../firebase";
+import { AccountView } from "./AccountView";
+import PropTypes from 'prop-types';
+
+/**
+ * The CommentObject component is used to represent either a user's comment on a public track or a message in the Conversations window.
+ */
+class CommentObject extends React.Component {
+    static propTypes = {
+        /**
+         * The router component to be used, use MainWindowController for most cases
+         */
+        router: PropTypes.elementType,
+        /**
+         * The userID which is used to display information about the author
+         */
+        userID: PropTypes.string,
+        /**
+         * The comment or message
+         */
+        comment: PropTypes.string,
+        /**
+         * The WaveForm component associated with this comment
+         */
+        player: PropTypes.elementType
+    }
+
+    constructor(props) {
+        super(props)
+
+        this.state = ({
+            comment: this.props.comment,
+            userDisplayName: '',
+            playerObject: this.props.player,
+        });
+    }
+
+    /**
+     * Will determine the CommentObject's associated user display name
+     */
+    componentDidMount() {
+        const userRef = firebase.database().ref('users/' + this.props.userID);
+        var userParse = '';
+
+        userRef.on('value', (snapshot) => {
+            userParse = snapshot.val();
+            this.setState({
+                userDisplayName: (userParse.displayname) ? userParse.displayname : 'Anonymous',
+            });
+        });
+    }
+
+    /** 
+     * @returns The representation of a parsed comment, including text and timestamps
+     */
+    parsedComment() {
+        const commentString = this.state.comment.split(new RegExp('(\\d\\d\\:\\d\\d\\-\\d\\d\\:\\d\\d\\s|\\d\\:\\d\\d\\-\\d\\:\\d\\d\\s)'));
+
+        const timeRegex = new RegExp('^\\d\\d\\:\\d\\d\\-\\d\\d\\:\\d\\d\\s|^\\d\\:\\d\\d\\-\\d\\:\\d\\d\\s'
+                                        + '| \\d\\d\\:\\d\\d\\-\\d\\d\\:\\d\\d|\\d\\:\\d\\d\\-\\d\\:\\d\\d '
+                                        + '|\\d\\d\\:\\d\\d\\-\\d\\d\\:\\d\\d$|\\d\\:\\d\\d\\-\\d\\:\\d\\d$'
+                                        + '|^\\d\\d\\:\\d\\d\\-\\d\\d\\:\\d\\d$|^\\d\\:\\d\\d\\-\\d\\:\\d\\d$', 'g');
+
+        const contents = commentString.map((token) => 
+            {
+                if (token) return (token.match(timeRegex)) 
+                ?   &lt;div>
+                        &lt;Chip 
+                            size="small" 
+                            label={token} 
+                            clickable
+                            variant='outlined'
+                            onClick={() => { this.state.playerObject.playFrom(token) }}
+                            style={{backgroundColor: 'hsla(200, 50%, 70%, 0.4)', borderColor: 'hsla(200, 50%, 70%, 0.4)'}}
+                        />
+                    &lt;/div> 
+                :   &lt;div>{token}&lt;/div>
+            });
+
+        return contents;
+    }
+
+    render() {
+        return (
+                &lt;Paper 
+                display='flex' 
+                flexDirection='column'
+                alignItems='flex-start'
+                flexWrap='wrap'
+                minWidth='96px'
+                elevation={0}
+                style={{backgroundColor: 'lightgrey', margin:'4px', padding:'6px'}}
+                borderRadius={4}
+                >
+                    &lt;Box className='user' display='flex' flexDirection='row' alignItems='center'>
+                        &lt;IconButton size='small' onClick={() => this.props.router.updateContent(&lt;AccountView router={this.props.router} user={this.props.userID}/>)}>
+                            &lt;AccountCircleOutlined />{this.state.userDisplayName}
+                        &lt;/IconButton>
+                    &lt;/Box>
+                    &lt;div className='comment'>{this.parsedComment()}&lt;/div>
+                &lt;/Paper>
+        );
+    }
+}
+
+export default CommentObject;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AccountSettings.html">AccountSettings</a></li><li><a href="AccountView.html">AccountView</a></li><li><a href="BrowseUsers.html">BrowseUsers</a></li><li><a href="CommentObject.html">CommentObject</a></li><li><a href="Conversations.html">Conversations</a></li><li><a href="Header.html">Header</a></li><li><a href="Introduction.html">Introduction</a></li><li><a href="Login.html">Login</a></li><li><a href="MainWindowController.html">MainWindowController</a></li><li><a href="Match.html">Match</a></li><li><a href="module.html#.exports">exports</a></li><li><a href="NewAccount.html">NewAccount</a></li><li><a href="ThreeBackground.html">ThreeBackground</a></li><li><a href="UploadTrack.html">UploadTrack</a></li><li><a href="WaveForm.html">WaveForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ActiveConvoSection">ActiveConvoSection</a></li><li><a href="global.html#audiofile">audiofile</a></li><li><a href="global.html#comment">comment</a></li><li><a href="global.html#CommentSection">CommentSection</a></li><li><a href="global.html#componentDidMount">componentDidMount</a></li><li><a href="global.html#controller">controller</a></li><li><a href="global.html#description">description</a></li><li><a href="global.html#folderID">folderID</a></li><li><a href="global.html#initialState">initialState</a></li><li><a href="global.html#isChild">isChild</a></li><li><a href="global.html#MakeWave">MakeWave</a></li><li><a href="global.html#MessageSection">MessageSection</a></li><li><a href="global.html#metadata">metadata</a></li><li><a href="global.html#MetaDataSection">MetaDataSection</a></li><li><a href="global.html#newVersionFolder">newVersionFolder</a></li><li><a href="global.html#player">player</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#steps">steps</a></li><li><a href="global.html#trackID">trackID</a></li><li><a href="global.html#trackname">trackname</a></li><li><a href="global.html#user">user</a></li><li><a href="global.html#userID">userID</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Tue Jan 25 2022 17:51:42 GMT-0500 (Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

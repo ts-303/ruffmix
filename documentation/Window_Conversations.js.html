@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Window/Conversations.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Window/Conversations.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Box, Button, Divider, Fade, Slide, TextField } from "@material-ui/core";
+import { AccountCircleOutlined } from "@material-ui/icons";
+import React from "react";
+import firebase from "../../firebase";
+import CommentObject from "./CommentObject";
+import './Conversations.css';
+import PropTypes from 'prop-types';
+
+/**
+ * Returns a representation of selectable conversations between other users.
+ * @param {Object} router The router component
+ * @param {Function} setActive - The setConvo function which is used in the Conversations class to set the currently selected and available conversations,
+ * @param {Object} convos - Contains the list of available conversations set from the setConvo function.
+ * @returns A representation of current conversations between users.
+ */
+const ActiveConvoSection = (args) => {
+    var listConvos = '';
+
+    if (args.convos) {
+        const convos = args.convos;
+        var namesList = '';
+
+        namesList = convos.map((convo) => {
+            var asdf = '';
+            const userRef = firebase.database().ref('users/' + convo + '/displayname');
+            userRef.on('value', (snapshot) => {
+                asdf = snapshot.val();
+            })
+
+            return [convo, asdf];
+        });
+
+    
+        listConvos = namesList.map((val) => {
+                        
+            return (
+                &lt;div>
+                    &lt;Box display='flex' flexDirection='row' alignItems='center'>
+                        &lt;Button onClick={() => args.setActive(val[0])} style={{ justifyContent: 'left', minWidth: '100%' }}>
+                            &lt;AccountCircleOutlined/>{val[1]}
+                        &lt;/Button>
+                    &lt;/Box>
+                    &lt;Divider />
+                &lt;/div>
+            )
+        });
+    }
+
+    return (&lt;div>{listConvos}&lt;/div>);
+}
+
+/**
+ * Displays the messages between two users.
+ * @param {Array} messageArray The array of messages between two users 
+ * @param {Object} router The router component
+ * @param {Object} player The player component to be linked via message using the CommentObject component (not yet implemented, in this case it is null)
+ * @returns A representation of the messages between two users.
+ */
+export function MessageSection(args) {
+
+    var listMessages = '';
+
+    if (args.messageArray.length > 0) {
+        const messages = args.messageArray;
+    
+        listMessages = messages.map((newMessage) => {
+            if (newMessage !== '') return (
+                &lt;Fade in={true} timeout={500}>
+                    &lt;Box display='flex' flexDirection='row' justifyContent={(newMessage.author === args.router.getUserID()) ? 'flex-end' : 'flex-start'}>
+                        &lt;CommentObject userID={newMessage.author} comment={newMessage.body} player={args.player} />
+                    &lt;/Box>
+                &lt;/Fade>
+            )
+        });
+    }
+
+    return (&lt;div>{listMessages}&lt;/div>);
+}
+
+/**
+ * The Conversations window allows for instant messaging between registered users
+ */
+export class Conversations extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.state = {
+            userDisplayName: "",
+            userConvos: '',
+            convoNames: '',
+            currentMessages: [],
+            currentConvo: "",
+            messageContent: '',
+            activeConvos: '',
+        };
+
+        this.setConvo = this.setConvo.bind(this);
+    }
+
+    /**
+     * Loads the active conversations and allows the messages of a conversation to be loaded via ActiveConvoSection
+     * @param {*} args Should contain a reference to the user whose active conversations will be loaded
+     */
+    setConvo = (args) => {
+
+        var setCurrentConvo = '';
+
+        this.setState({
+            currentMessages: [],
+        },() => {
+            if (args !== this.props.router.getUserID()) {
+                if (this.state.userConvos.length !== 0) {
+                    var userIndex = 0;
+    
+                    const convos = Object.keys(this.state.userConvos);
+    
+                    for (const convo in convos) {
+                        
+                        if (args === convos[convo]) break;
+                        else userIndex++;
+                    }
+    
+                    setCurrentConvo = Object.entries(this.state.userConvos)[userIndex];
+    
+                    if (setCurrentConvo) {
+                        const setCurrentMessages = setCurrentConvo[1];
+    
+                        this.setState({
+                            currentConvo: setCurrentConvo[0],
+                            currentMessages: Object.values(setCurrentMessages.messages),
+                        });
+                    }
+                }
+                if (this.state.userConvos.length === 0 || !setCurrentConvo) {
+
+                    this.setState({
+                        currentConvo: args,
+                        currentMessages: ['']
+                    });
+    
+                    const newConvoLocation =
+                        firebase.database().ref('users/' + this.props.router.getUserID() + '/conversations/' + args);
+    
+                    newConvoLocation.update({ messages: [''] });
+                }
+            }
+        });
+    }
+
+    /**
+     * Sends a new message, adding the message to both the sending and receiving users' conversations
+     */
+    handleMessageSend = (event) => {
+        event.preventDefault();
+
+        if (this.state.messageContent &amp;&amp; this.state.currentConvo &amp;&amp; this.state.currentConvo !== this.props.router.getUserID()) {
+
+            const receiverLocation = 
+                firebase.database().ref('users/' + this.state.currentConvo + '/conversations/' + this.props.router.getUserID());
+
+            const senderLocation = 
+                firebase.database().ref('users/' + this.props.router.getUserID() + '/conversations/' + this.state.currentConvo);
+
+            var newMessageData = {
+                author: this.props.router.getUserID(),
+                body: this.state.messageContent 
+            };
+
+            var newCurrentMessages = [];
+            if (this.state.currentMessages[0] !== '') newCurrentMessages = this.state.currentMessages.concat(newMessageData);
+            else newCurrentMessages[0] = newMessageData;
+
+            this.setState({ 
+                currentMessages: newCurrentMessages,
+                messageContent: '',
+            },() => {
+                        receiverLocation.update({messages: this.state.currentMessages});
+                        senderLocation.update({messages: this.state.currentMessages});
+            });
+        }
+    }
+
+    handleTextChange = (event) => {        
+        this.setState({ 
+            messageContent: event.target.value,
+        })
+
+        event.preventDefault();
+    }
+
+    componentDidMount() {
+        const userRef = firebase.database().ref('users/' + this.props.router.getUserID());
+        var userParse = '';
+
+        userRef.on('value', (snapshot) => {
+            userParse = snapshot.exportVal();
+            if (userParse.conversations) {
+
+                // var startConvo = this.props.user;
+                // if (this.state.currentConvo) startConvo = this.state.currentConvo; 
+                
+                this.setState({
+                    userConvos: userParse.conversations,
+                }, () => {
+                    this.setConvo(Object.keys(this.state.userConvos)[0]);
+                });
+            }
+            else {
+                this.setState({
+                    userConvos: [],
+                }, () => this.setConvo(this.props.user));
+            }
+        }, ()=>{userRef.off()});
+    }
+
+    render() {
+
+        return (
+            &lt;div className="conversations">
+                &lt;Box className="convo-section">
+                    &lt;div>
+                        &lt;Slide in={true} direction="right">
+                            &lt;Box>
+                                Active Conversations
+                                &lt;ActiveConvoSection router={this.props.router} setActive={this.setConvo} convos={Object.keys(this.state.userConvos)}/>
+                            &lt;/Box>
+                        &lt;/Slide>
+                    &lt;/div>
+                &lt;/Box>
+                    &lt;div className="user-convo">
+                        &lt;Box mr={'4%'}style={{overflowY: 'auto'}}>
+                            &lt;MessageSection messageArray={this.state.currentMessages} player={null} router={this.props.router} />
+                        &lt;/Box>
+                        &lt;Box display='flex' flexDirection='row' justifyContent='flex-end' mt={'2%'} mr={'4%'}>
+                            &lt;form onSubmit={this.handleMessageSend}>
+                                &lt;Box display='flex' flexDirection='row' alignItems='flex-end'>
+                                    &lt;TextField
+                                        label="New Message"
+                                        placeholder='. . .'
+                                        require={true}
+                                        value={this.state.messageContent}
+                                        onChange={this.handleTextChange}
+                                        size='small'
+                                        fullWidth
+                                    />
+                                    &lt;Box>&lt;Button size='small' type='submit' variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Send&lt;/Button>&lt;/Box>
+                                &lt;/Box>
+                            &lt;/form>
+                        &lt;/Box>
+                    &lt;/div>
+            &lt;/div>
+        );
+    }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AccountSettings.html">AccountSettings</a></li><li><a href="AccountView.html">AccountView</a></li><li><a href="BrowseUsers.html">BrowseUsers</a></li><li><a href="CommentObject.html">CommentObject</a></li><li><a href="Conversations.html">Conversations</a></li><li><a href="Header.html">Header</a></li><li><a href="Introduction.html">Introduction</a></li><li><a href="Login.html">Login</a></li><li><a href="MainWindowController.html">MainWindowController</a></li><li><a href="Match.html">Match</a></li><li><a href="module.html#.exports">exports</a></li><li><a href="NewAccount.html">NewAccount</a></li><li><a href="ThreeBackground.html">ThreeBackground</a></li><li><a href="UploadTrack.html">UploadTrack</a></li><li><a href="WaveForm.html">WaveForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ActiveConvoSection">ActiveConvoSection</a></li><li><a href="global.html#audiofile">audiofile</a></li><li><a href="global.html#comment">comment</a></li><li><a href="global.html#CommentSection">CommentSection</a></li><li><a href="global.html#componentDidMount">componentDidMount</a></li><li><a href="global.html#controller">controller</a></li><li><a href="global.html#description">description</a></li><li><a href="global.html#folderID">folderID</a></li><li><a href="global.html#initialState">initialState</a></li><li><a href="global.html#isChild">isChild</a></li><li><a href="global.html#MakeWave">MakeWave</a></li><li><a href="global.html#MessageSection">MessageSection</a></li><li><a href="global.html#metadata">metadata</a></li><li><a href="global.html#MetaDataSection">MetaDataSection</a></li><li><a href="global.html#newVersionFolder">newVersionFolder</a></li><li><a href="global.html#player">player</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#steps">steps</a></li><li><a href="global.html#trackID">trackID</a></li><li><a href="global.html#trackname">trackname</a></li><li><a href="global.html#user">user</a></li><li><a href="global.html#userID">userID</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Tue Jan 25 2022 17:51:42 GMT-0500 (Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

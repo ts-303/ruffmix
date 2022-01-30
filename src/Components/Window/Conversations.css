@@ -1,0 +1,29 @@
+.conversations {
+    display: flex;
+    flex-direction: row;
+    padding: 2%;
+    height: 100%;
+}
+
+.convo-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    font-family: "Century Gothic", Futura, sans-serif;
+    min-width: 30%;
+    font-size: 24px;
+}
+
+.user-convo {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-left: 2%;
+    margin-bottom: 4%;
+    min-width: 70%;
+}
+
+.MuiTableCell-root {
+    font-family: "Century Gothic", Futura, sans-serif;
+    font-size: 16px;
+}
