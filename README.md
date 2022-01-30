@@ -14,4 +14,4 @@ yarn build
 
 to bundle your application
 
-new line
+new line ruffmix-dev
