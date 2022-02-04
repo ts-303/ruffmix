@@ -6,6 +6,44 @@ import { Conversations } from './Conversations';
 import WaveForm from "./WaveForm";
 import PropTypes from 'prop-types';
 
+/**
+ * Populates the user's track list using WaveForm components
+ */
+export function GetTracks(props) {
+
+    if (!props.tracks) return (<div>User has no tracks</div>);
+
+    const objTracks = Object.values(props.tracks);
+    var tracksArr = [];
+
+    
+    objTracks.map((folder) => {
+
+        var total = Object.values(folder).length;
+        
+        Object.values(folder).map((track, index) => {
+            const newTrackFile = track.userID + '/audio/' + track.folderID + '/' + track.trackID;
+
+            tracksArr = tracksArr.concat(
+                <WaveForm
+                    isChild={index === total - 1 ? false : true}
+                    controller={props.controller}
+                    router={props.router}
+                    audiofile={newTrackFile}
+                    trackname={track.trackname}
+                    metadata={track.metadata}
+                    description={track.description}
+                    folderID={track.folderID}
+                    trackID={track.trackID}
+                    userID={track.userID}
+                />
+            );
+
+        });
+    });
+
+    return (<div>{tracksArr.reverse()}</div>);
+}
 
 /**
  * The AccountView window displays a user's public information and track list. From here other users can listen to and
@@ -37,6 +75,7 @@ export class AccountView extends React.Component {
             userTracks: [],
             avatarURL: '',
             userPrivacySettings: false,
+            waveformArr: [],
         };
 
         this.setPrevPlayer = this.setPrevPlayer.bind(this);
@@ -61,60 +100,16 @@ export class AccountView extends React.Component {
     }
 
     /**
-     * Populates the user's track list using WaveForm components.
-     */
-    getTracks() {
-        this.setState({ 
-            userTracks: []
-        })
-
-        var newTracksArr = [];
-
-        const folders = (this.state.userAudio);
-            
-        for (var folder in folders) {
-            var currentFolder = folders[folder];
-            var index = 0;
-            var total = Object.values(folders[folder]).length;
-
-            for (var track in currentFolder) {
-                
-                const newTrackFile = currentFolder[track].userID + '/audio/' + currentFolder[track].folderID + '/' + currentFolder[track].trackID;
-
-                newTracksArr = newTracksArr.concat(
-                    <WaveForm 
-                    isChild={index === total-1 ? false : true} 
-                    controller={this}
-                    router={this.props.router} 
-                    audiofile={newTrackFile}
-                    trackname={currentFolder[track].trackname}
-                    metadata={currentFolder[track].metadata}
-                    description={currentFolder[track].description}
-                    folderID={currentFolder[track].folderID}
-                    trackID={currentFolder[track].trackID}
-                    userID={currentFolder[track].userID}
-                    />
-                );
-
-                index++;
-            }
-        }
-
-        this.setState({ 
-            userTracks: newTracksArr.reverse(),                                                     //probably not efficient operation
-        })
-
-    }
-
-    /**
      * Will load all public info and tracks for this user.
      */
     componentDidMount() {
+
         const userRef = firebase.database().ref('users/' + this.props.user);
         var userParse = '';
 
         userRef.on('value', (snapshot) => {
             userParse = snapshot.val();
+            
             this.setState({
                 userDisplayName: userParse.displayname,
                 userDescription: userParse.description,
@@ -123,7 +118,9 @@ export class AccountView extends React.Component {
                 userLocation: userParse.location,
                 userAudio: userParse.audio,
                 userPrivacySettings: JSON.parse(userParse.privacysettings),
-            }, () => this.getTracks());
+            }, () => {
+                userRef.off()
+            });
         });
 
         const avatarRef = firebase.storage().ref('images/' + this.props.user);
@@ -222,7 +219,7 @@ export class AccountView extends React.Component {
                         {( (this.props.user === this.props.router.getUserID()) 
                             || ((firebase.auth().currentUser && firebase.auth().currentUser.email) && !this.state.userPrivacySettings['TracksPublic'])
                             || (!(firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])) ? 
-                            this.state.userTracks : "Please sign in to view this user's tracks"}
+                            <GetTracks tracks={this.state.userAudio} controller={this} router={this.props.router} /> : "Please sign in to view this user's tracks"}
                     </Box>
                 </Fade>
             </div>

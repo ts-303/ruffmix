@@ -35,6 +35,9 @@ export class UploadTrack extends React.Component {
             other: false,
             trackPreviewPlayer: '',
             loadingProgress: 0,
+            cleanupFolderID: '',
+            cleanupTrackID: '',
+            uploadSuccess: '',
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -108,7 +111,9 @@ export class UploadTrack extends React.Component {
         const storageRef = firebase.storage().ref().child(this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
         this.props.router.setLoadingState(true);
 
-        firebase.database().ref('users/' + this.state.userID + '/audio/' + newFolderID + '/' + newTrackID).set({
+        const newTrackRef = firebase.database().ref('users/' + this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
+
+        newTrackRef.set({
             folderID: newFolderID,
             trackID: newTrackID,
             userID: this.state.userID,
@@ -120,12 +125,35 @@ export class UploadTrack extends React.Component {
             alert('Track Data Set fail' + error);
         });
 
-        storageRef.put(newAudioFile).then((snapshot) => {
-            console.log('File upload success');
-            this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()} />);
-        }).then(() => this.props.router.setLoadingState(false)).catch((error) => {
-            alert('Track Upload fail' + error);
+        this.setState({
+            cleanupFolderID: newFolderID,
+            cleanupTrackID: newTrackID,
+            uploadSuccess: false, 
         });
+
+        var uploadTask = storageRef.put(newAudioFile);
+
+        uploadTask.on('state_changed', function progress(snapshot) {
+            // var percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            // uploader.value = percentage;
+
+        }, function error(err) {
+            newTrackRef.remove().catch(function (error) {
+                console.log("User DB cleanup fail: " + error.message)
+            });
+
+            alert('Track Upload fail' + error);
+            this.props.router.setLoadingState(false);
+
+        }, function complete() {
+
+            console.log('File upload success');
+            this.setState({uploadSuccess: true});
+            this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()} />);
+            this.props.router.setLoadingState(false);
+
+
+        }.bind(this));
 
         event.preventDefault();
     }
@@ -157,13 +185,22 @@ export class UploadTrack extends React.Component {
         })
     }
 
+    componentWillUnmount() {
+        if (this.state.uploadSuccess === false) {
+            firebase.database().ref('users/' + this.state.userID + '/audio/'
+            + this.state.cleanupFolderID + '/' + this.state.cleanupTrackID).remove().catch(function (error) {
+                console.log("User DB cleanup fail: " + error.message)
+            });
+        }
+    }
+
     render() {
         return (
             <Grow in={true}>
                 <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
                     <CardHeader title={this.props.newVersionFolder ? 'Upload New Track Version' : 'Upload New Track'} />
                     <Box display='flex' flexDirection='column'>
-                        <Collapse in={this.state.trackPreviewPlayer} display='flex' flexDirection='column' justifyContent='flex-start'>
+                        <Collapse in={this.state.trackPreviewPlayer} display='flex' flexDirection='column'>
                             <Box height='64px' pb={7}>{this.state.trackPreviewPlayer}</Box>
                         </Collapse>
                         <form onSubmit={this.handleTrackSubmit}>

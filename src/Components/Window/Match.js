@@ -78,7 +78,7 @@ export class Match extends React.Component {
     /**
      * @returns A promise to remove matching data on firebase when necessary
      */
-    cleanup = () => {
+    cleanup = (errorStatus) => {
         return new Promise((resolve, reject) => {
             if (this.state.currentUserID) {
                 firebase.database().ref('matching/' + this.state.currentUserID).remove().catch((error) => {
@@ -91,13 +91,13 @@ export class Match extends React.Component {
                     });
                 }
 
-                if (!this.state.trackIsPublic && !this.state.keepTracks) {
+                if ((!this.state.trackIsPublic && !this.state.keepTracks) || errorStatus) {
                     firebase.database().ref('users/' + this.state.currentUserID + '/audio/'
                         + this.state.currentFolderID + '/' + this.state.currentTrackID).remove().catch(function (error) {
                             console.log("User DB cleanup fail: " + error.message)
                         });
 
-                    firebase.storage().ref().child('audio/' + this.state.currentFolderID + '/' + this.state.currentTrackID).delete().catch((error) => {
+                    firebase.storage().ref().child(this.state.currentUserID + '/audio/' + this.state.currentFolderID + '/' + this.state.currentTrackID).delete().catch((error) => {
                         console.log('Storage cleanup error: ' + error);
                     });
                 }
@@ -363,10 +363,11 @@ export class Match extends React.Component {
                             });
                         }
                         else {
-                            console.log('Match session creation fail - session canelled during upload');
+                            console.log('Match session creation fail - session cancelled during upload');
                             storageRef.delete();
                         }
                     }).catch((error) => {
+                        this.cleanup(true);
                         alert('File Upload fail' + error);
                     });
                 });

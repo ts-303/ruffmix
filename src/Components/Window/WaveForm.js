@@ -15,6 +15,7 @@ import CommentObject from './CommentObject';
 import { UploadTrack } from './UploadTrack';
 import './WaveForm.css';
 import PropTypes from 'prop-types';
+import { AccountView } from './AccountView';
 
 /**
  * Displays the comment section of a Waveform component
@@ -48,6 +49,7 @@ export function CommentSection(args) {
  * @param {Function} args.setTime Callback function to be used when the user seeks on the Wavesurfer instance
  * @param {File} args.audiofile The audio file to be loaded into the Wavesurfer instance
  * @param {Function} args.setLoadingProgress Callback function to be used while the Wavesurfer instance is loading, receives integer loading progress (0..100)
+ * @param {Function} args.handleDestroy Callback function to be used when the Wavesurfer instance is to be destroyed, Ex. when the file is not found
  * @param {boolean} args.asPreview Omittable boolean to determine if this instance is to be used as a preview. Disables drag selection when set to true.
  * @param {Function} args.identifier Omittable callback function used to show the display name of a user when hovering the mouse over a commented region
  * @returns A new Wavesurfer instance
@@ -88,6 +90,7 @@ export function MakeWave(args) {
             wavesurfer.on('ready', () => args.handleReady(wavesurfer));
             wavesurfer.on('seek', () => args.setTime());
             wavesurfer.on('loading', (progress) => args.setLoadingProgress(progress));
+            wavesurfer.on('destroy', () => args.handleDestroy());
             //Draw user info over region
             wavesurfer.on('region-mouseenter', (region) => {
 
@@ -130,7 +133,18 @@ export function MakeWave(args) {
     
                         wavesurfer.load(url);
                     }).catch((error) => {
-                        alert('Waveform download error: ' + error);
+                        console.log('Waveform download error: ' + error);
+
+                        const checkExistsRef = firebase.database().ref('users/' + args.audiofile);
+
+                        checkExistsRef.limitToFirst(1).once("value", snapshot => {
+                            if (snapshot.exists()) {
+                                console.log("Removing blank database track entry at: " + checkExistsRef);
+                                checkExistsRef.remove().catch((error) => {console.log(error);});
+                                wavesurfer.destroy();
+                            }
+                        });
+
                     });
                 }  
             }
@@ -240,6 +254,7 @@ class WaveForm extends React.Component {
             trackID: this.props.trackID,
             userID: this.props.userID,
             loadingProgress: 0,
+            loadingSuccess: true,
             regionIdentifier: '',
             authorControls: ((this.props.userID === this.props.router.getUserID()) ? true : false),
         };
@@ -247,6 +262,7 @@ class WaveForm extends React.Component {
         this.setTime = this.setTime.bind(this);
         this.setLoadingProgress = this.setLoadingProgress.bind(this);
         this.setRegionIdentifier = this.setRegionIdentifier.bind(this);
+        this.handleDestroy = this.handleDestroy.bind(this);
     }
 
     /**
@@ -292,9 +308,9 @@ class WaveForm extends React.Component {
                 alert('Realtime DB track delete error: ' + error)
             });
 
-            firebase.storage().ref().child('audio/' + this.state.folderID + '/' + this.state.trackID).delete().then(() => {
+            firebase.storage().ref().child(this.state.userID + '/audio/' + this.state.folderID + '/' + this.state.trackID).delete().then(() => {
                 console.log('Deleted track from storage');
-                this.state.controller.getTracks();
+                this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()} />);
             }).then(() => this.props.router.setLoadingState(false)).catch((error) => {
                 alert('Storage track delete error: ' + error)
             });
@@ -633,12 +649,19 @@ class WaveForm extends React.Component {
         })
     }
 
-    //Displays the WaveForm either as a preview or with full content
+    /**
+     * Prevents rendering of the component when the audio file is not successfully loaded
+     */
+    handleDestroy() {
+        this.setState({loadingSuccess: false});
+    }
+
+    //Displays the WaveForm either as a preview or with full content when successfully loaded
     render() {
-        if (this.state.trackIsPreview) {
+        if (this.state.trackIsPreview && this.state.loadingSuccess) {
             return (
                 <Box>
-                    <Box display='flex' flexDirection='row' alignItems='center'>
+                    <Box display='flex' flexDirection='row' alignItems='center' justifyContent={'center'}>
                         <IconButton
                             onClick={() => { this.togglePlay() }}
                             size='small'
@@ -658,6 +681,7 @@ class WaveForm extends React.Component {
                                 setTime={this.setTime}
                                 audiofile={this.state.audioFile}
                                 setLoadingProgress={this.setLoadingProgress}
+                                handleDestroy={this.handleDestroy}
                             />
                         </Box>
                     </Box>
@@ -667,7 +691,7 @@ class WaveForm extends React.Component {
                 </Box>
             )
         }
-        else return (
+        else if (this.state.loadingSuccess) return (
             <Box display='flex' flexDirection='column' padding='10px'>
                 <Box
                     style={{ display: this.state.isChild ? 'flex' : 'none' }}
@@ -733,6 +757,7 @@ class WaveForm extends React.Component {
                                     setLoadingProgress={this.setLoadingProgress}
                                     asPreview={this.state.trackIsPreview}
                                     identifier={this.setRegionIdentifier}
+                                    handleDestroy={this.handleDestroy}
                                 />
                             </div>
                         </div>
@@ -785,7 +810,7 @@ class WaveForm extends React.Component {
                 </Box>
             </Box>
         );
-
+        else return <div></div>;
     }
 }
 

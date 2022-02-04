@@ -67,3 +67,7 @@ node_modules/
 
 # TODO file
 TODO.txt
+
+# Build and dist directories
+build/
+dist/
