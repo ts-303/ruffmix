@@ -1,21 +1,21 @@
 {
   "files": {
     "main.css": "/static/css/main.b69eaaab.chunk.css",
-    "main.js": "/static/js/main.c904a652.chunk.js",
-    "main.js.map": "/static/js/main.c904a652.chunk.js.map",
+    "main.js": "/static/js/main.cb513b51.chunk.js",
+    "main.js.map": "/static/js/main.cb513b51.chunk.js.map",
     "runtime-main.js": "/bundle.js",
     "runtime-main.js.map": "/bundle.js.map",
-    "static/js/2.dfb9133d.chunk.js": "/static/js/2.dfb9133d.chunk.js",
-    "static/js/2.dfb9133d.chunk.js.map": "/static/js/2.dfb9133d.chunk.js.map",
+    "static/js/2.bc7fa5ea.chunk.js": "/static/js/2.bc7fa5ea.chunk.js",
+    "static/js/2.bc7fa5ea.chunk.js.map": "/static/js/2.bc7fa5ea.chunk.js.map",
     "index.html": "/index.html",
     "static/css/main.b69eaaab.chunk.css.map": "/static/css/main.b69eaaab.chunk.css.map",
-    "static/js/2.dfb9133d.chunk.js.LICENSE.txt": "/static/js/2.dfb9133d.chunk.js.LICENSE.txt",
+    "static/js/2.bc7fa5ea.chunk.js.LICENSE.txt": "/static/js/2.bc7fa5ea.chunk.js.LICENSE.txt",
     "static/media/speaker.1ca362d1.glb": "/static/media/speaker.1ca362d1.glb"
   },
   "entrypoints": [
     "bundle.js",
-    "static/js/2.dfb9133d.chunk.js",
+    "static/js/2.bc7fa5ea.chunk.js",
     "static/css/main.b69eaaab.chunk.css",
-    "static/js/main.c904a652.chunk.js"
+    "static/js/main.cb513b51.chunk.js"
   ]
 }

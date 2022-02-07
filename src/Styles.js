@@ -1,5 +1,5 @@
 import { alpha } from "@material-ui/core";
-import { amber, blueGrey } from '@material-ui/core/colors';
+import { amber, blueGrey, green, red } from '@material-ui/core/colors';
 
 const darkBlue = '#2f3847';
 const blueGreyFade = alpha(blueGrey[500], 0.15);
@@ -52,6 +52,24 @@ const styles = {
         color: blueGrey[300],
         '&:hover': {
             backgroundColor: blueGreyFade,
+        }
+    },
+
+    b_Success: {
+        color: green[400],
+        borderColor: green[400],
+        '&:hover': {
+            borderColor: green[200],
+            backgroundColor: green[50],
+        }
+    },
+
+    b_Error: {
+        color: red[400],
+        borderColor: red[400],
+        '&:hover': {
+            borderColor: red[200],
+            backgroundColor: red[50],
         }
     },
 

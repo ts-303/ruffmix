@@ -1,7 +1,8 @@
-import { Box, Button, CardHeader, Checkbox, FormControlLabel, Grow, IconButton, Slide, Step, StepLabel, Stepper, TextField } from "@material-ui/core";
+import { Box, Button, CardHeader, Checkbox, FormControlLabel, Grow, IconButton, Slide, Step, StepLabel, Stepper, TextField, Tooltip} from "@material-ui/core";
 import NavigateBeforeRoundedIcon from '@material-ui/icons/NavigateBeforeRounded';
 import NavigateNextRoundedIcon from '@material-ui/icons/NavigateNextRounded';
 import React from "react";
+import { isThisTypeNode } from "typescript";
 import firebase from '../../firebase';
 
 /**
@@ -62,6 +63,12 @@ export class NewAccount extends React.Component {
 
     }
 
+    checkValid() {
+        return (this.state.slideStep === 0 && this.state.userEmail && this.state.userPassword 
+            && this.state.userEmail.includes('@') && this.state.userPassword.length >= 8) 
+            || (this.state.slideStep === 1 && this.state.userDisplayName);
+    }
+
     /**
      * Creates a new account using Firebase's Auth service. If a user matched anonymously, the anonymous session account can be linked and an uploaded track 
      * will be added to the new account automatically.
@@ -115,7 +122,7 @@ export class NewAccount extends React.Component {
             this.setState({
                 activeStep: activeStep - 1,
                 inProp: true,
-            }, () => this.setState({inProp: false}));
+            }, () => this.setState({inProp: false, sectionValid: this.checkValid()}));
         }
     }
 
@@ -126,8 +133,9 @@ export class NewAccount extends React.Component {
             this.setState({
                 activeStep: activeStep + 1,
                 inProp: true,
-            }, () => this.setState({inProp: false}));
+            }, () => this.setState({inProp: false, sectionValid: this.checkValid()}));
         }
+
     }
 
     render() {
@@ -160,6 +168,7 @@ export class NewAccount extends React.Component {
                                                     placeholder='. . .'
                                                     size='medium'
                                                     type='email'
+                                                    required='true'
                                                     onChange={this.handleChange}
                                                 />
                                                 <TextField
@@ -168,6 +177,7 @@ export class NewAccount extends React.Component {
                                                     placeholder='. . .'
                                                     size='medium'
                                                     type='password'
+                                                    required='true'
                                                     onChange={this.handleChange}
                                                 />
                                             </Box>
@@ -180,6 +190,7 @@ export class NewAccount extends React.Component {
                                                     name='userDisplayName'
                                                     placeholder='. . .'
                                                     size='medium'
+                                                    required='true'
                                                     onChange={this.handleChange}
                                                 />
                                                 <TextField
@@ -248,13 +259,21 @@ export class NewAccount extends React.Component {
                                 </Slide>
                             </Box>
                             <Box>
-                            <div style={{visibility: (this.state.activeStep === 2 ? 'hidden' : 'visible')}}>
-                                    <IconButton  
-                                    onClick = {() => this.nextButton()}
-                                    >
-                                        <NavigateNextRoundedIcon fontSize='large'/>
-                                    </IconButton>
-                                </div>
+                                <Tooltip
+                                    title='Please fill out all required fields'
+                                    arrow={true}
+                                    placement='right'
+                                    disableHoverListener={this.state.sectionValid}
+                                >
+                                    <div style={{visibility: (this.state.activeStep === 2 ? 'hidden' : 'visible')}}>
+                                        <IconButton  
+                                        onClick = {() => this.nextButton()}
+                                        disabled={!this.checkValid()}
+                                        >
+                                            <NavigateNextRoundedIcon fontSize='large'/>
+                                        </IconButton>
+                                    </div>
+                                </Tooltip>
                             </Box>
                         </Box>
                         <Stepper

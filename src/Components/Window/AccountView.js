@@ -175,7 +175,7 @@ export class AccountView extends React.Component {
                                 marginTop='12px' 
                                 flexDirection='row' 
                                 style={{ 
-                                    display: this.props.user === this.props.router.getUserID() ? "none" : "true",
+                                    display: (!this.props.router.getUserEmail() || this.props.user === this.props.router.getUserID()) ? "none" : "true",
                                 }}
                                 >
                                     <Button

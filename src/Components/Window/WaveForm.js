@@ -1,4 +1,5 @@
-import { Box, Button, Chip, CircularProgress, Collapse, IconButton, Paper, TextField, Tooltip } from '@material-ui/core';
+import { Box, Button, Chip, CircularProgress, Collapse, IconButton, Paper, TextField, Tooltip, Backdrop, Card } from '@material-ui/core';
+import CancelIcon from '@material-ui/icons/Cancel';
 import DeleteOutlineIcon from '@material-ui/icons/DeleteOutline';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
@@ -257,6 +258,7 @@ class WaveForm extends React.Component {
             loadingSuccess: true,
             regionIdentifier: '',
             authorControls: ((this.props.userID === this.props.router.getUserID()) ? true : false),
+            userWillDelete: false,
         };
         this.handleReady = this.handleReady.bind(this);
         this.setTime = this.setTime.bind(this);
@@ -293,6 +295,12 @@ class WaveForm extends React.Component {
     newTrackVersion() {
         if (this.props.router.getUserID() && this.state.authorControls) this.props.router.updateContent(<UploadTrack router={this.props.router} newVersionFolder={this.state.folderID} />);
         else this.login();
+    }
+
+    deleteCheck(props) {
+        if (props === true) this.deleteTrack();
+
+        this.setState({userWillDelete: false});
     }
 
     /**
@@ -692,7 +700,7 @@ class WaveForm extends React.Component {
             )
         }
         else if (this.state.loadingSuccess) return (
-            <Box display='flex' flexDirection='column' padding='10px'>
+            <Box display='flex' flexDirection='column' padding='10px' style={{position: 'relative'}}>
                 <Box
                     style={{ display: this.state.isChild ? 'flex' : 'none' }}
                     paddingLeft='70%'
@@ -713,6 +721,21 @@ class WaveForm extends React.Component {
                     </Paper>
                 </Box>
                 <Box display='flex' flexDirection='row' alignItems='center' justifyContent='flex-end'>
+                    <Backdrop style={{ zIndex: '10', position: 'absolute' }} open={this.state.userWillDelete} component={this}>
+                        <Card
+                            style={{ width: '50%', height: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly' }}
+                        >
+                            <Box display='flex' flexDirection='column' justifyContent='space-around'>
+                                <Box>Are you sure you want to delete this track?</Box>
+                                <Box display='flex' flexDirection='row' justifyContent='space-evenly'>
+                                    <Button variant='outlined' className={this.props.router.getStyles('b_Success')} onClick={() => this.deleteCheck(true)}>
+                                        <DeleteOutlineIcon /> Yes </Button>
+                                    <Button variant='outlined' className={this.props.router.getStyles('b_Error')} onClick={() => this.deleteCheck(false)}>
+                                        <CancelIcon /> No </Button>
+                                </Box>
+                            </Box>
+                        </Card>
+                    </Backdrop>
                     <Box
                         display='flex'
                         flexDirection='column'
@@ -726,7 +749,7 @@ class WaveForm extends React.Component {
                             </IconButton>
                         </Tooltip>
                         <Tooltip title='Delete this track' placement='left' arrow={true}>
-                            <IconButton onClick={() => this.deleteTrack()}>
+                            <IconButton onClick={() => this.setState({userWillDelete: true})}>
                                 <DeleteOutlineIcon />
                             </IconButton>
                         </Tooltip>

@@ -103,6 +103,10 @@ export class MainWindowController extends React.Component {
         return this.state.userDisplayName;
     }
 
+    getUserEmail() {
+        return this.state.userEmail;
+    }
+
     refreshWindow(){
         this.setState({
             refresh: !this.state.refresh,
@@ -131,6 +135,7 @@ export class MainWindowController extends React.Component {
                 if (user) {
                     this.setState({
                         userID: user.uid,
+                        userEmail: user.email,
                         userDisplayName: user.displayname,
                         content: <AccountView user={user.uid} router={this} />,
                     }, () => this.refreshWindow());
