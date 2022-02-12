@@ -1,4 +1,4 @@
-import { Box, Button, Chip, CircularProgress, Collapse, IconButton, Paper, TextField, Tooltip, Backdrop, Card } from '@material-ui/core';
+import { Box, Button, Chip, CircularProgress, Collapse, IconButton, Paper, TextField, Tooltip, Backdrop, Card, CardHeader, CardContent } from '@material-ui/core';
 import CancelIcon from '@material-ui/icons/Cancel';
 import DeleteOutlineIcon from '@material-ui/icons/DeleteOutline';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
@@ -725,14 +725,13 @@ class WaveForm extends React.Component {
                         <Card
                             style={{ width: '50%', height: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly' }}
                         >
-                            <Box display='flex' flexDirection='column' justifyContent='space-around'>
-                                <Box>Are you sure you want to delete this track?</Box>
-                                <Box display='flex' flexDirection='row' justifyContent='space-evenly'>
-                                    <Button variant='outlined' className={this.props.router.getStyles('b_Success')} onClick={() => this.deleteCheck(true)}>
-                                        <DeleteOutlineIcon /> Yes </Button>
-                                    <Button variant='outlined' className={this.props.router.getStyles('b_Error')} onClick={() => this.deleteCheck(false)}>
-                                        <CancelIcon /> No </Button>
-                                </Box>
+                            <Box style={{textAlign: 'center'}}>Are you sure you want to delete this track?</Box>
+                            <Box display='flex' flexDirection='row' justifyContent='space-evenly'>
+                                <Button variant='outlined' className={this.props.router.getStyles('b_Success')} onClick={() => this.deleteCheck(true)}>
+                                    <DeleteOutlineIcon /> Yes </Button>
+                                    <Box ml={2} mr={2}/>
+                                <Button variant='outlined' className={this.props.router.getStyles('b_Error')} onClick={() => this.deleteCheck(false)}>
+                                    <CancelIcon /> No </Button>
                             </Box>
                         </Card>
                     </Backdrop>

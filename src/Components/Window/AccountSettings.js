@@ -1,9 +1,10 @@
 import { Avatar, Box, Button, Checkbox, Divider, FormControlLabel, Input, InputAdornment, Slide, TextField, Tooltip } from "@material-ui/core";
-import { AccountCircle } from "@material-ui/icons";
+import { AccountCircle, ArrowForwardIos } from "@material-ui/icons";
+import PublishIcon from '@material-ui/icons/Publish';
 import React from "react";
 import firebase from "../../firebase";
 import { AccountView } from "./AccountView";
-import './Conversations.css';
+import './AccountSettings.css';
 import PropTypes from 'prop-types';
 
 /**
@@ -88,18 +89,22 @@ export class AccountSettings extends React.Component {
             roles: JSON.stringify(this.state.userRoles),
             location: this.state.userLocation,
             privacysettings: JSON.stringify(this.state.userPrivacySettings),
-        }, () => this.props.router.setLoadingState(false));
+        }, () => {
+            this.props.router.setLoadingState(false)
+            this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()}/>);
+        });
 
         if (this.state.avatarURL) {
-            this.props.router.setLoadingState(true);
             firebase.storage().ref().child('images/' + this.props.router.getUserID()).put(this.state.avatarImage).then((snapshot) => {
                 console.log('Avatar image upload success');
-            }).then(() => this.props.router.setLoadingState(false)).catch((error) => {
+            }).then(() => {
+                this.props.router.setLoadingState(false)
+                this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()}/>);
+            }).catch((error) => {
                 console.log('Avatar image upload fail' + error);
             });
         }
 
-        this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()}/>);
     }
 
     handleFileSelect = (event) => {
@@ -148,34 +153,40 @@ export class AccountSettings extends React.Component {
 
     render() {
         return (
-            <div className="conversations">
-                <Box className="convo-section">
+            <div className="accountsettings">
+                <Box className="selection">
                     <div>
                         <Slide in={true} direction="right">
-                            <div>
+                            <div style={{fontWeight: 'bold'}}>
                             My Account
-                                <Button onClick={() => this.setState({selection: 0})} style={{ justifyContent: 'left', minWidth: '100%' }}>
-                                    Account Information
+                                <Button startIcon={this.state.selection === 0 ? <ArrowForwardIos/> : false} 
+                                onClick={() => this.setState({selection: 0})} 
+                                style={{ justifyContent: 'left', minWidth: '100%' }}>
+                                    Account Information 
                                 </Button>
                                 <Divider />
-                                <Button onClick={() => this.setState({selection: 1})} style={{ justifyContent: 'left', minWidth: '100%' }}>
+                                <Button startIcon={this.state.selection === 1 ? <ArrowForwardIos/> : false}
+                                onClick={() => this.setState({selection: 1})} 
+                                style={{ justifyContent: 'left', minWidth: '100%' }}>
                                     Privacy Settings
                                 </Button>
                                 <Divider />
-                                <Button onClick={() => this.setState({selection: 2})} style={{ justifyContent: 'left', minWidth: '100%' }}>
+                                <Button startIcon={this.state.selection === 2 ? <ArrowForwardIos/> : false}
+                                onClick={() => this.setState({selection: 2})} 
+                                style={{ justifyContent: 'left', minWidth: '100%' }}>
                                     Display Preferences
                                 </Button>
                             </div>
                         </Slide>
                     </div>
                 </Box>
-                <div className="user-convo">
-                    <div style={{flexDirection: 'column'}} hidden={(this.state.selection === 0 ? false : true)}>
-                        Account Information
-                        <div>
+                <Box className="settings" width='100%' >
+                    <div hidden={(this.state.selection === 0 ? false : true)}>
+                        <div style={{fontWeight: 'bold', fontSize:'24px', textAlign: 'center'}}>Account Information</div>
+                        <Box mt={2} mb={2} style={{fontSize:'24px', display: 'flex', flexDirection: 'row', justifyContent: 'flex-start'}}>
                             Custom Avatar
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'row' }}>
+                        </Box>
+                        <Box style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center'}}>
                             <Avatar
                                 style={{ marginRight: '10px', width: '128px', height: '128px', }}
                                 src={(this.state.avatarURL) ? this.state.avatarURL : this.state.avatarImage}
@@ -189,84 +200,102 @@ export class AccountSettings extends React.Component {
                                     onChange={this.handleFileSelect}
                                     startAdornment={
                                         <InputAdornment>
-                                            <AccountCircle />
+                                            <PublishIcon />
                                         </InputAdornment>
                                     }
                                 />
                             </Tooltip>
-                        </div>
-                        <TextField
-                                        label="Display Name"
-                                        placeholder='. . .'
-                                        name='userDisplayName'
-                                        value={this.state.userDisplayName}
-                                        onChange={this.handleChange}
-                                        size='small'
-                                        fullWidth
-                        />
-                        <TextField
-                                        label="Description"
-                                        placeholder='. . .'
-                                        name='userDescription'
-                                        value={this.state.userDescription}
-                                        onChange={this.handleChange}
-                                        size='small'
-                                        fullWidth
-                        />
-                        <TextField
-                                        label="Location"
-                                        placeholder='. . .'
-                                        name='userLocation'
-                                        value={this.state.userLocation}
-                                        onChange={this.handleChange}
-                                        size='small'
-                                        fullWidth
-                        />
-                        My Roles
-                        <Box display='flex' flexDirection='row'>
-                            {() => {
-                                if (this.state.userRoles) {                                
-                                    const initialRoles = ['Producer', 'Engineer', 'Composer', 'Artist'];
-                                
-                                    return initialRoles.map((role) => {
-                                        return <FormControlLabel
-                                                //Setting a random key seems to be the only way to make this element display the updated checked attribute
-                                                control={<Checkbox key={Math.random()} name={role} checked={this.state.userRoles[role]} onChange={this.handleChange} />}
-                                                label={role}
-                                                />
-                                    });
-                                }
-                            }}
+                        </Box>
+                        <Box mt={2} mb={1} style={{fontSize:'24px', display: 'flex', flexDirection: 'row', justifyContent: 'flex-start'}}>
+                            Public Information
+                        </Box>
+                        <Box m='auto' width='70%'>
+                            <TextField
+                                            label="Display Name"
+                                            placeholder='. . .'
+                                            name='userDisplayName'
+                                            value={this.state.userDisplayName}
+                                            onChange={this.handleChange}
+                                            size='small'
+                                            fullWidth
+                            />
+                            <TextField
+                                            label="Description"
+                                            placeholder='. . .'
+                                            name='userDescription'
+                                            value={this.state.userDescription}
+                                            onChange={this.handleChange}
+                                            size='small'
+                                            fullWidth
+                            />
+                            <TextField
+                                            label="Location"
+                                            placeholder='. . .'
+                                            name='userLocation'
+                                            value={this.state.userLocation}
+                                            onChange={this.handleChange}
+                                            size='small'
+                                            fullWidth
+                            />
+                            <Box mt={2} style={{textAlign: 'center', fontSize: '24px', }}>My Roles:</Box>
+                            <Box display='flex' justifyContent='center'>
+                                <Box>
+                                    {() => {
+                                        if (this.state.userRoles) {                                
+                                            const initialRoles = ['Producer', 'Engineer', 'Composer', 'Artist'];
+                                        
+                                            return initialRoles.map((role) => {
+                                                return <FormControlLabel
+                                                        //Setting a random key seems to be the only way to make this element display the updated checked attribute
+                                                        control={<Checkbox key={Math.random()} name={role} checked={this.state.userRoles[role]} onChange={this.handleChange} />}
+                                                        label={role}
+                                                        />
+                                            });
+                                        }
+                                    }}
+                                </Box>
+                            </Box>
                         </Box>
                     </div>
                     <div hidden={(this.state.selection === 1 ? false : true)}>
-                        Privacy Settings 
-                        <Box display='flex' flexDirection='row'>
-                        {() => {
-                                if (this.state.userPrivacySettings) {                                
-                                    const initialPrivacySettings = ['BrowseUsers', 'TracksPublic'];
-                                    const settingLabels = ['Show your profile on the public browse users page?', 'Allow unregistered users to view your tracks?']
-                                
-                                    return initialPrivacySettings.map((setting, index) => {
-                                        return <FormControlLabel
-                                                //Setting a random key seems to be the only way to make this element display the updated checked attribute
-                                                control={<Checkbox key={Math.random()} name={setting} checked={this.state.userPrivacySettings[setting]} onChange={this.handleChange} />}
-                                                label={settingLabels[index]}
-                                                />
-                                    });
-                                }
-                        }}
+                        <div style={{fontWeight: 'bold', fontSize:'24px', textAlign: 'center'}}>Privacy Settings</div> 
+                        <Box mt={2} textAlign='center'>
+                            <Box>
+                                {() => {
+                                        if (this.state.userPrivacySettings) {                                
+                                            const initialPrivacySettings = ['BrowseUsers', 'TracksPublic'];
+                                            const settingLabels = ['Show your profile on the public browse users page?', 'Allow unregistered users to view your tracks?']
+                                        
+                                            return initialPrivacySettings.map((setting, index) => {
+                                                return <FormControlLabel
+                                                        //Setting a random key seems to be the only way to make this element display the updated checked attribute
+                                                        control={<Checkbox key={Math.random()} name={setting} checked={this.state.userPrivacySettings[setting]} onChange={this.handleChange} />}
+                                                        label={settingLabels[index]}
+                                                        />
+                                            });
+                                        }
+                                }}
+                            </Box>
                         </Box>
                     </div>
                     <div hidden={(this.state.selection === 2 ? false : true)}>
-                        Display Preferences 
+                    <div style={{fontWeight: 'bold', fontSize:'24px', textAlign: 'center'}}>Display Preferences (Not Functional)</div> 
                         <FormControlLabel
                             control={<Checkbox/>}
                             label="Display 1"
                         />
                     </div>
-                    <Button disabled={!this.state.changesMade} onClick={this.submitChanges}>Submit</Button>
-                </div>
+                    <Box display='flex' justifyContent='center'>
+                        <Button 
+                        variant='outlined'
+                        className={this.props.router.getStyles('b_MainWindow')} 
+                        disabled={!this.state.changesMade} 
+                        onClick={this.submitChanges}
+                        >
+                            Submit Changes
+                        </Button>
+                    </Box>
+                </Box>
             </div>
         );
     }

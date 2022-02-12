@@ -4,6 +4,7 @@ import NavigateNextRoundedIcon from '@material-ui/icons/NavigateNextRounded';
 import React from "react";
 import { isThisTypeNode } from "typescript";
 import firebase from '../../firebase';
+import { AccountView } from "./AccountView";
 
 /**
  * Titles for account creation steps
@@ -93,6 +94,7 @@ export class NewAccount extends React.Component {
                     var user = usercred.user;
                     firebase.database().ref('users/' + user.uid).update(userData);
                     this.props.router.setUser(user);
+                    this.props.router.updateContent(<AccountView router={this.props.router} user={user.uid} />)
                 }).catch((error) => {
                     console.log("Error upgrading anonymous account", error);
                 });
@@ -161,7 +163,7 @@ export class NewAccount extends React.Component {
                                 >
                                     <div>
                                         <div hidden={(this.state.slideStep === 0  ? false : true)}>
-                                            <Box display='flex' flexDirection='column'>
+                                            <Box display='flex' flexDirection='column' >
                                                 <TextField
                                                     label="New Email"
                                                     name='userEmail'
@@ -184,7 +186,7 @@ export class NewAccount extends React.Component {
                                         </div>
 
                                         <div hidden={(this.state.slideStep === 1  ? false : true)}>
-                                            <Box display='flex' flexDirection='column'>
+                                            <Box display='flex' flexDirection='column' >
                                                 <TextField
                                                     label="Display Name"
                                                     name='userDisplayName'
@@ -286,7 +288,6 @@ export class NewAccount extends React.Component {
                                 </Step>
                             ))}
                         </Stepper>
-                        
                 </Box>
             </Grow>
         );

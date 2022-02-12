@@ -47,24 +47,27 @@ export class BrowseUsers extends React.Component {
      * @param {*} uRef A Firebase reference for the list of users to load.
      */
     getUsers(uRef) {
+        if (!uRef) return;
         const users = Object.entries(uRef);
 
         var getUsersArr = [];
             
         users.map((currentUser) => {
 
-            var parsedRoles = JSON.parse(currentUser[1].roles);
-            var parsedSettings = JSON.parse(currentUser[1].privacysettings);
+            if (currentUser[1].displayname) {
+                var parsedRoles = JSON.parse(currentUser[1].roles);
+                var parsedSettings = JSON.parse(currentUser[1].privacysettings);
 
-            const userElement = <UserCard 
-                                router={this.props.router} 
-                                user={currentUser[0]} 
-                                displayName={currentUser[1].displayname}
-                                roles={(currentUser[1].roles) ? Object.keys(parsedRoles).filter(role => parsedRoles[role] === true).join("|") : ''}
-                                location={(currentUser[1].location) ? currentUser[1].location : ''}
-                                />
+                const userElement = <UserCard
+                    router={this.props.router}
+                    user={currentUser[0]}
+                    displayName={currentUser[1].displayname}
+                    roles={(currentUser[1].roles) ? Object.keys(parsedRoles).filter(role => parsedRoles[role] === true).join("|") : ''}
+                    location={(currentUser[1].location) ? currentUser[1].location : ''}
+                />
 
-            if (parsedSettings['BrowseUsers']) getUsersArr.push(userElement);
+                if (parsedSettings['BrowseUsers']) getUsersArr.push(userElement);
+            }
         });
 
         this.setState({

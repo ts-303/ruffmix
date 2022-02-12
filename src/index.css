@@ -1,11 +1,19 @@
+@font-face {
+    font-family: 'Quicksand-Light';
+    src: local('Quicksand-Light'), url('./fonts/Quicksand-Light.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Quicksand-Regular';
+    src: local('Quicksand-Regular'), url('./fonts/Quicksand-Regular.ttf') format('truetype');
+}
 
 body, .header-center{
-    font-family: "Century Gothic", Futura, sans-serif;
+    font-family: 'Quicksand-Light';
 }
 
 h2 {
-  font-family: "Century Gothic", Futura, sans-serif;
-  font-weight: lighter;
+  font-family: 'Quicksand-Regular';
 }
 
 canvas {

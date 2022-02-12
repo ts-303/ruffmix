@@ -153,13 +153,13 @@ export class AccountView extends React.Component {
                                     justifyContent='center'
                                     alignItems='flex-start'
                                     style={{ height: '96px', }}>
-                                    <Box className='userName' >{this.state.userDisplayName}</Box>
-                                    <Box className='userRole'>
+                                    <Box style={{fontSize: '24px', fontFamily: 'Quicksand-Regular'}} >{this.state.userDisplayName}</Box>
+                                    <Box style={{fontSize: '18px', fontFamily: 'Quicksand-Regular'}}>
                                         {(this.state.userRole) ? 
                                             Object.keys(this.state.userRole).filter(role => this.state.userRole[role] === true).join("|") 
                                             : ''}
                                     </Box>
-                                    <Box className='userRole'>{(this.state.userLocation) ? this.state.userLocation : ''}</Box>
+                                    <Box style={{fontSize: '18px', fontFamily: 'Quicksand-Regular'}}>{(this.state.userLocation) ? this.state.userLocation : ''}</Box>
                                 </Box>
                             </Box>
                         </Slide>

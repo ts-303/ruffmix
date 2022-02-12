@@ -1,5 +1,6 @@
 import { createTheme } from "@material-ui/core";
 import { amber, blueGrey } from "@material-ui/core/colors";
+import './index.css';
 
 const theme = createTheme({
 
@@ -17,14 +18,14 @@ const theme = createTheme({
             root: {
                 textTransform: 'none',
                 fontSize: 18,
-                fontFamily: ['Century Gothic, Futura, sans-serif'].join(),
+                fontFamily: 'Quicksand-Regular',
             }
         },
         MuiMenuItem: {
             root: {
                 textTransform: 'none',
                 fontSize: 18,
-                fontFamily: ['Century Gothic, Futura, sans-serif'].join(),
+                fontFamily: 'Quicksand-Light',
                 justifyContent: 'flex-end',
 
             }
@@ -38,7 +39,7 @@ const theme = createTheme({
                 color: blueGrey[300],
                 backgroundColor: '#2f3847',
                 fontSize: 18,
-                fontFamily: ['Century Gothic, Futura, sans-serif'].join(),
+                fontFamily: 'Quicksand-Regular',
             }
         },
     },

@@ -5,6 +5,7 @@ import { Header } from '../Header';
 import { AccountView } from './AccountView';
 import { Introduction } from './Introduction';
 import './MainWindowController.css';
+import { AccountSettings } from './AccountSettings';
 
 /**
  * The MainWindowController is responsible for "routing" all content shown in the main window of Ruffmix.

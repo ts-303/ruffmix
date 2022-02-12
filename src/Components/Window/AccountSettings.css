@@ -1,29 +1,28 @@
-.account-view {
+.accountsettings {
     display: flex;
     flex-direction: row;
-    justify-content: center;
     padding: 2%;
     height: 100%;
 }
 
-.user-info {
+.selection {
     display: flex;
     flex-direction: column;
-    width: 30%;
-    height: 40%;
+    justify-content: flex-start;
+    min-width: 30%;
+    font-size: 24px;
 }
 
-.user-track {
+.settings {
     display: flex;
     flex-direction: column;
-    text-align: flex-start;
-    justify-content: flex-start;
+    justify-content: space-between;
     margin-left: 2%;
     margin-bottom: 4%;
-    width: 70%;
     overflow-y: auto;
 }
 
 .MuiTableCell-root {
     font-size: 16px;
 }
+
