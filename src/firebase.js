@@ -23,7 +23,7 @@ let firebaseConfig = {
 var fire = firebase.initializeApp(firebaseConfig);
 
 fire.database().useEmulator("192.168.1.246", 9000);
-fire.auth().useEmulator("http://192.168.1.246:9099");
+fire.auth().useEmulator("http://192.168.1.246:9099", { disableWarnings: true });
 fire.storage().useEmulator("192.168.1.246", 9199);
 
 export default firebase;

@@ -1,4 +1,4 @@
-import { Backdrop, Card, CircularProgress, Grow } from '@material-ui/core';
+import { Backdrop, Card, CircularProgress, Grid, Grow } from '@material-ui/core';
 import React from 'react';
 import firebase from '../../firebase';
 import { Header } from '../Header';
@@ -6,6 +6,8 @@ import { AccountView } from './AccountView';
 import { Introduction } from './Introduction';
 import './MainWindowController.css';
 import { AccountSettings } from './AccountSettings';
+import { Conversations } from './Conversations';
+import { isMobile } from 'react-device-detect';
 
 /**
  * The MainWindowController is responsible for "routing" all content shown in the main window of Ruffmix.
@@ -143,9 +145,9 @@ export class MainWindowController extends React.Component {
                 }
             } 
             if (!user) {
-                console.log('User logout');
+                console.log('User logout or no user signed in');
                 this.setState({
-                    content: <Introduction router={this} />,
+                    content: <Conversations router={this} />,
                 }, () => this.refreshWindow());
             }
 
@@ -190,10 +192,23 @@ export class MainWindowController extends React.Component {
                 </Backdrop>
                 
                 {this.state.headerBar}
-                <Grow in={true} timeout={2000}>
-                    <Card elevation={3} className="main-window-card">
-                        {this.state.content}
-                    </Card>
+                <Grow in={true} timeout={2000} >
+                    {
+                        (!isMobile) ? 
+                        <Card elevation={3} className="main-window-card">
+                            {this.state.content}
+                        </Card> :
+                        <Grid 
+                        container
+                        direction="column"
+                        alignItems="center"
+                        justifyContent="center"
+                        style={{backgroundColor: 'white', position: 'fixed', top: '58px', bottom: '0'}}
+                        zIndex='0'
+                        >
+                            <Grid item >{this.state.content}</Grid>
+                        </Grid>
+                    }
                 </Grow>
             </div>
         );

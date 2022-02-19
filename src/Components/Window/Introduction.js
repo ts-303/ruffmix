@@ -6,6 +6,7 @@ import React from "react";
 import { ThreeBackground } from '../ThreeBackground.js';
 import { Match } from "./Match";
 import { NewAccount } from "./NewAccount";
+import { isMobile } from 'react-device-detect';
 
 /**
  * The Introduction window is the default window to be loaded on Ruffmix, containing links to learn about the process, create a new account,
@@ -25,7 +26,7 @@ export class Introduction extends React.Component {
         return (
             <Grow in={true} timeout={2000}>
                 <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%'>
-                    <ThreeBackground/>
+                    {(!isMobile) ? <ThreeBackground/> : <div/>}
                     <Box height="20%"><CardHeader titleTypographyProps={{variant: 'h3'}} title="Welcome"/></Box>
                     <Box mx='20%' display='flex' height="60%" flexDirection='column' justifyContent='space-evenly'
                         style={{fontSize: 20, textAlign: 'center'}}>

@@ -16,6 +16,10 @@ h2 {
   font-family: 'Quicksand-Regular';
 }
 
+h3 {
+    font-family: 'Quicksand-Light';
+}
+
 canvas {
   z-index: -2;
   position : absolute; 

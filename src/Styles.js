@@ -1,5 +1,5 @@
 import { alpha } from "@material-ui/core";
-import { amber, blueGrey, green, red } from '@material-ui/core/colors';
+import { amber, blue, blueGrey, green, red } from '@material-ui/core/colors';
 
 const darkBlue = '#2f3847';
 const blueGreyFade = alpha(blueGrey[500], 0.15);
@@ -106,6 +106,11 @@ const styles = {
 
     secondary: {
         color: blueGrey[300],
+    },
+
+    defaultBar: {
+        color: blueGrey[300],
+        backgroundColor: darkBlue,
     },
 
     mainBackground: {

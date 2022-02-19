@@ -9,6 +9,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import React from 'react';
 import { Conversations } from './Window/Conversations';
 import { PropTypes } from 'prop-types';
+import { isMobile } from 'react-device-detect';
 
 /**
  * The HeaderMenu returns navigation elements for managing the current user
@@ -49,6 +50,12 @@ export default function HeaderMenu(props) {
         event.preventDefault();
     }
 
+    const logIn = (event) => {
+        props.header.login();
+        handleClose(event);
+        event.preventDefault();
+    }
+
     const logOut = (event) => {
 
         props.router.signOut();
@@ -80,7 +87,7 @@ export default function HeaderMenu(props) {
                     <Grow
                         {...TransitionProps}
                         in={open}
-                        style={{ transformOrigin: 'right' }}
+                        style={{ transformOrigin: 'right', margin: isMobile ? 0 : true }}
                     >
                         <Paper square elevation={0} className={props.router.getStyles('headerMenu')}>
                             <ClickAwayListener onClickAway={handleClose}>
@@ -95,7 +102,7 @@ export default function HeaderMenu(props) {
                                         <MenuItem onClick={logOut}>Logout</MenuItem>
                                     </div>
                                     <div>
-                                        <MenuItem onClick={handleClose}>---</MenuItem>
+                                        <MenuItem onClick={logIn}>Login</MenuItem>
                                         <Divider variant='middle' className={props.router.getStyles('divider')} />
                                         <MenuItem onClick={handleClose}>About</MenuItem>
                                     </div>

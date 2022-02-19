@@ -93,7 +93,7 @@
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("throw new Error(\"Module parse failed: Unexpected token (16:11)\\nYou may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders\\n| class Title extends React.Component {\\n|   render() {\\n>     return(<body className=\\\"maintitle\\\">ruffmix</body>);\\n|   }\\n| }\");\n\n//# sourceURL=webpack:///./src/index.js?");
+eval("throw new Error(\"Module parse failed: Unexpected token (13:11)\\nYou may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders\\n| class Title extends React.Component {\\n|   render() {\\n>     return(<body className=\\\"maintitle\\\">ruffmix</body>);\\n|   }\\n| }\");\n\n//# sourceURL=webpack:///./src/index.js?");
 
 /***/ })
 

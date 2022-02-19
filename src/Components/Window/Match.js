@@ -419,8 +419,10 @@ export class Match extends React.Component {
         return (
             <Grow in={true}>
                 <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
-                    <CardHeader title="Instant Matching" />
-                    <Box height='30%' width='100%' display='flex' flexDirection='column' justifyContent='center' alignItems='center'>
+
+                    <Box height='10%'><CardHeader title="Instant Matching" /></Box>
+
+                    <Box height={(this.state.slideStep >= 3) ? '0' : '20%'} width='100%' display='flex' flexDirection='column' justifyContent='center' alignItems='center'>
                         <div hidden={(this.state.slideStep >= 3) ? true : false}>
                             <Collapse in={this.state.trackPreviewPlayer}>
                                 <Box>{this.state.trackPreviewPlayer}</Box>
@@ -428,7 +430,8 @@ export class Match extends React.Component {
                         </div>
                     </Box>
 
-                    <Box display='flex' flexDirection='row' width='70%' justifyContent='space-between' alignSelf='center' alignItems='center'>
+                    {/* Navigation */}
+                    <Box display='flex' flexDirection='row' width='70%' height='10%' justifyContent='space-between' alignSelf='center' alignItems='center'>
                         <Box>
                             <div style={{ visibility: (this.state.activeStep === 0 || this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
                                 <IconButton
@@ -460,7 +463,8 @@ export class Match extends React.Component {
                         </Box>
                     </Box>
 
-                    <Box display='flex' height='70%' width='50%' flexDirection='column' justifyContent='center' alignSelf='center' mx={5}>
+                    {/* Sliding Content */}
+                    <Box display='flex' height='40%' width='50%' flexDirection='column' justifyContent='center' alignSelf='center' mx={5}>
                         <Slide
                             in={this.state.inProp}
                             onExited={() => this.setState({ inProp: !this.state.inProp, slideStep: this.state.activeStep })}
@@ -584,18 +588,21 @@ export class Match extends React.Component {
                             </div>
                         </Slide>
                     </Box>
-                    <Stepper
-                        activeStep={this.state.activeStep}
-                        alternativeLabel
-                        size='small'
-                    >
-                        {steps.map((label) => (
-                            <Step key={label}>
-                                <StepLabel orientation="vertical">{label}</StepLabel>
-                            </Step>
-                        ))}
-                    </Stepper>
 
+                    <Box height='20%' >
+                        <Stepper
+                            activeStep={this.state.activeStep}
+                            alternativeLabel={(window.innerHeight > 800) ? true : false}
+                            size='small'
+                        >
+                            {steps.map((label) => (
+                                <Step key={label}>
+                                    <StepLabel orientation="vertical">{label}</StepLabel>
+                                </Step>
+                            ))}
+                        </Stepper>
+                    </Box>
+                
                 </Box>
             </Grow>
         );
