@@ -26,6 +26,7 @@ class App extends React.Component {
 
     componentDidMount() {
         this._isMounted = true;
+        document.title = 'Ruffmix';
     }
 
     componentWillUnmount() {

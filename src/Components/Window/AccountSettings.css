@@ -3,6 +3,20 @@
     flex-direction: row;
     padding: 2%;
     height: 100%;
+    background-color: #2f384770;
+}
+
+.accountsettings-mobile {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #2f384770;
 }
 
 .selection {
@@ -13,6 +27,15 @@
     font-size: 24px;
 }
 
+.selection-mobile {
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+    font-size: 24px;
+    padding-left: 5%;
+    padding-right: 5%;
+}
+
 .settings {
     display: flex;
     flex-direction: column;
@@ -20,6 +43,18 @@
     margin-left: 2%;
     margin-bottom: 4%;
     overflow-y: auto;
+    width: 100%;
+    text-align: center;
+}
+
+.settings-mobile {
+    display: flex;
+    flex-direction: column;
+    justify-self: center;
+    text-align: center;
+    overflow-y: auto;
+    padding-left: 5%;
+    padding-right: 5%;
 }
 
 .MuiTableCell-root {

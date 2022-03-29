@@ -6,6 +6,7 @@ import { AccountView } from './AccountView';
 import './UploadTrack.css';
 import WaveForm from "./WaveForm";
 import PropTypes from 'prop-types';
+import { isMobile } from "react-device-detect";
 
 /**
  * The UploadTrack window allows a registered user to upload a new track to their profile. 
@@ -109,7 +110,7 @@ export class UploadTrack extends React.Component {
         //var newFileName = this.fileInput.current.files[0].name;
 
         const storageRef = firebase.storage().ref().child(this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
-        this.props.router.setLoadingState(true);
+        this.props.router.setLoadingState(true, 'Uploading track...');
 
         const newTrackRef = firebase.database().ref('users/' + this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
 
@@ -197,12 +198,23 @@ export class UploadTrack extends React.Component {
     render() {
         return (
             <Grow in={true}>
-                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
-                    <CardHeader title={this.props.newVersionFolder ? 'Upload New Track Version' : 'Upload New Track'} />
-                    <Box display='flex' flexDirection='column'>
-                        <Collapse in={this.state.trackPreviewPlayer} display='flex' flexDirection='column'>
-                            <Box height='64px' pb={7}>{this.state.trackPreviewPlayer}</Box>
-                        </Collapse>
+                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center' 
+                style={{position: 'absolute', top: 0, left: 0, bottom: 0, right: 0, backgroundColor: '#2f384770'}}
+                >
+                    <Box height="10%" style={{position: 'absolute', top: 0, left: 0, right:0}}>
+                        <CardHeader className={this.props.router.getStyles('appBackground')} 
+                        title={this.props.newVersionFolder ? 'Upload New Track Version' : 'Upload New Track'} 
+                        />
+                    </Box>
+                    <Box height='80%' width={isMobile ? '80%' : '50%'} display='flex' flexDirection='column' justifyContent='center' alignSelf='center' 
+                    style={{position: 'absolute', top: '10%', bottom: '10%', textAlign: 'center', overflowY: 'auto'}}
+                    >
+                        <Box>
+                            <Collapse in={this.state.trackPreviewPlayer} display='flex' flexDirection='column'>
+                                <div height='128px'>{this.state.trackPreviewPlayer}</div>
+                            </Collapse>
+                        </Box>
+                        <Box>
                         <form onSubmit={this.handleTrackSubmit}>
                             <Box display='flex' flexDirection='column' alignItems='center' className={this.props.router.getStyles('formContent')}>
                                 <FormControl>
@@ -260,7 +272,9 @@ export class UploadTrack extends React.Component {
                                                 label="Other"
                                             />
                                             <Collapse in={this.state.other ? true : false} display='flex' flexDirection='column'>
-                                                    <div>Please specify "Other" tag (Limit 12 characters):</div>
+                                                    <div className={this.props.router.getStyles('appBackground')}>
+                                                        Please specify "Other" tag (Limit 12 characters):
+                                                    </div>
                                                     <TextField
                                                         name='metaDataOther'
                                                         placeholder='. . .'
@@ -276,8 +290,9 @@ export class UploadTrack extends React.Component {
                                 <Button type='submit' variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Upload Track</Button>
                             </Box>
                         </form>
+                        </Box>
                     </Box>
-                    <Box></Box>
+                    <Box height='10%'></Box>
                 </Box>
             </Grow>
         );

@@ -23,51 +23,25 @@ import MenuIcon from '@material-ui/icons/Menu';
  * @returns A representation of current conversations between users.
  */
 const ActiveConvoSection = (args) => {
-    var listConvos = '';
+    var convos = Object.keys(args.convos);
 
-    if (args.convos) {
-        const convos = args.convos;
-        var namesList = '';
+    return convos.map((convoID, index) => {
+            var displayName = Object.values(args.convos)[index].name;
 
-        namesList = convos.map((convo) => {
-            var asdf = '';
-            const userRef = firebase.database().ref('users/' + convo + '/displayname');
-            userRef.on('value', (snapshot) => {
-                asdf = snapshot.val();
-            })
-
-            return [convo, asdf];
-        });
-
-        //REMOVE
-        // namesList = [
-        //     ['id', 'user 1'], ['id', 'user 2'], ['id', 'user 3'], ['id', 'user 4'], ['id', 'user 5'], ['id', 'user 6'],
-        //     ['id', 'user 7'], ['id', 'user 8'], ['id', 'user 9'], ['id', 'user 4'], ['id', 'user 5'], ['id', 'user 6'],
-        // ];
-
-        listConvos = namesList.map((val, index) => {
-            const selectedID = val[0];
-            const displayName = val[1];
-
-            return (
-                <div>
-                    <Box display='flex' flexDirection='row'>
-                        <Button
-                            onClick={() => args.setActive(selectedID, displayName, index)} style={{ justifyContent: 'left', minWidth: '100%' }}
-                            startIcon={args.currentIndex === index ? <ArrowForwardIos /> : false}
-                            style={{ color: '#90a4ae', justifyContent: 'flex-start' }}
-                            fullWidth
-                        >
-                            <AccountCircleOutlined />{displayName}
-                        </Button>
-                    </Box>
-                    <Divider />
-                </div>
-            )
-        });
-    }
-
-    return (<div>{listConvos}</div>);
+            return <div>
+                <Box display='flex' flexDirection='row'>
+                    <Button
+                        onClick={() => args.setActive(convoID, displayName)} style={{ justifyContent: 'left', minWidth: '100%' }}
+                        startIcon={args.currentIndex === index ? <ArrowForwardIos /> : false}
+                        style={{ color: '#90a4ae', justifyContent: 'flex-start' }}
+                        fullWidth
+                    >
+                        <AccountCircleOutlined />{displayName}
+                    </Button>
+                </Box>
+                <Divider />
+            </div>
+    })
 }
 
 /**
@@ -184,7 +158,7 @@ export class Conversations extends React.Component {
             convoNames: '',
             currentMessages: [],
             currentConvo: "",
-            currentDisplayName: '',
+            currentDisplayName: ' ',
             messageContent: '',
             activeConvos: '',
             selectedIndex: 0,
@@ -197,16 +171,17 @@ export class Conversations extends React.Component {
      * Loads the active conversations and allows the messages of a conversation to be loaded via ActiveConvoSection
      * @param {*} args Should contain a reference to the user whose active conversations will be loaded
      */
-    setConvo = (id, displayName, index) => {
+     setConvo = (id, displayName) => {
 
         var setCurrentConvo = '';
 
         this.setState({
             currentMessages: [],
-            selectedIndex: index,
+            currentDisplayName: '',
         }, () => {
 
             if (id !== this.props.router.getUserID()) {
+                //If there are existing conversations
                 if (this.state.userConvos.length !== 0) {
                     var userIndex = 0;
 
@@ -214,7 +189,10 @@ export class Conversations extends React.Component {
 
                     for (const convo in convos) {
 
-                        if (id === convos[convo]) break;
+                        if (id === convos[convo])  {
+                            this.setState({selectedIndex: userIndex});
+                            break;
+                        }  
                         else userIndex++;
                     }
 
@@ -226,9 +204,11 @@ export class Conversations extends React.Component {
                         this.setState({
                             currentConvo: setCurrentConvo[0],
                             currentMessages: Object.values(setCurrentMessages.messages),
+                            currentDisplayName: displayName,
                         });
                     }
                 }
+                //If there are no existing conversations
                 if (this.state.userConvos.length === 0 || !setCurrentConvo) {
 
                     this.setState({
@@ -240,7 +220,7 @@ export class Conversations extends React.Component {
                     const newConvoLocation =
                         firebase.database().ref('users/' + this.props.router.getUserID() + '/conversations/' + id);
 
-                    newConvoLocation.update({ messages: [''] });
+                    newConvoLocation.update({ messages: [''], name: displayName });
                 }
             }
         });
@@ -267,14 +247,14 @@ export class Conversations extends React.Component {
 
             var newCurrentMessages = [];
             if (this.state.currentMessages[0] !== '') newCurrentMessages = this.state.currentMessages.concat(newMessageData);
-            else newCurrentMessages[0] = newMessageData;
+            else newCurrentMessages[0] = newMessageData;                
 
             this.setState({
                 currentMessages: newCurrentMessages,
                 messageContent: '',
             }, () => {
-                receiverLocation.update({ messages: this.state.currentMessages });
-                senderLocation.update({ messages: this.state.currentMessages });
+                receiverLocation.update({ messages: this.state.currentMessages, name: this.props.router.getDisplayName()});
+                senderLocation.update({ messages: this.state.currentMessages, name: this.state.currentDisplayName});
             });
         }
     }
@@ -293,47 +273,31 @@ export class Conversations extends React.Component {
 
         userRef.on('value', (snapshot) => {
             userParse = snapshot.exportVal();
-            if (userParse.conversations) {
+            if ((this.props.user && this.props.user !== this.props.router.getUserID()) || userParse.conversations) {
 
-                // var startConvo = this.props.user;
-                // if (this.state.currentConvo) startConvo = this.state.currentConvo; 
-
-                this.setState({
-                    userConvos: userParse.conversations,
-                }, () => {
-                    this.setConvo(Object.keys(this.state.userConvos)[0], 'Convos loaded', 0);
+                const initialConvo = (this.props.user && this.props.user !== this.props.router.getUserID()) 
+                ? this.props.user 
+                : Object.keys(userParse.conversations)[this.state.selectedIndex];
+                
+                firebase.database().ref('users/' + initialConvo + '/displayname').once('value').then((data) => {
+                    this.setState({ 
+                        userConvos: (userParse.conversations) ? userParse.conversations : '',
+                        currentDisplayName: data.val(),
+                    }, () => this.setConvo(initialConvo, data.val()));
                 });
+
             }
-            else if (this.props.user) {
-                this.setState({
-                    userConvos: [],
-                }, () => this.setConvo(this.props.user, 'New convo', 0));
-            }
-        }, () => { userRef.off() });
+            else this.setState({currentDisplayName: 'Select a Conversation'});
+        });
     }
 
     render() {
-
-        //REMOVE
-        // const MESSAGE_TEST = [{ 'author': this.props.router.getUserID(), 'body': 'current user comment' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'other user comment blah blah' }, { 'author': 'user', 'body': 'other user comment blah blah' },
-        // { 'author': 'user', 'body': 'FINAL TEXT' },
-        // ];
 
         return (
             <div className={isMobile ? 'conversations-mobile' : 'conversations'}>
                 <Box className={isMobile ? 'convo-section-mobile' : 'convo-section'}>
                         <Slide in={true} direction="right">
-                            <Box className={isMobile ? '' : 'convo-section-text'}>
+                            <Box className={isMobile ? '' : 'convo-section-text'} >
                                 {
                                     isMobile 
                                     ? <Box display='flex' flexDirection='row'>
@@ -345,14 +309,16 @@ export class Conversations extends React.Component {
                                                         <ActiveConvoSection
                                                             router={this.props.router}
                                                             setActive={this.setConvo}
-                                                            convos={Object.keys(this.state.userConvos)}
+                                                            convos={this.state.userConvos}
                                                             currentIndex={this.state.selectedIndex}
                                                         />
+                                                        {(this.state.userConvos.length === 0) ? 
+                                                        <div style={{textAlign: 'center'}}>No conversations found</div> : ''}
                                                     </Box>
                                                 }
                                             />
                                         </div>
-                                        <div>{this.state.currentDisplayName}</div>
+                                        <Box display='flex' flexDirection='row'>{this.state.currentDisplayName}</Box>
                                     </Box>
                                     : <div>
                                         <div style={{ fontWeight: 'bold' }}>
@@ -361,9 +327,11 @@ export class Conversations extends React.Component {
                                         <ActiveConvoSection
                                             router={this.props.router}
                                             setActive={this.setConvo}
-                                            convos={Object.keys(this.state.userConvos)}
+                                            convos={this.state.userConvos}
                                             currentIndex={this.state.selectedIndex}
                                         />
+                                        {(this.state.userConvos.length === 0) ? 
+                                        <div style={{fontSize: '16px'}}>No conversations found</div> : ''}
                                     </div>
                                 }
                             </Box>

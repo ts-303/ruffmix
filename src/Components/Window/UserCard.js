@@ -40,7 +40,7 @@ export default class UserCard extends React.Component {
             <Box
                 display='flex'
                 flexDirection='row'
-                alignItems='center' m={4}
+                alignItems='center' m={2}
                 onClick={() => this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.user} />)}
             >
                 <Card 
@@ -49,7 +49,7 @@ export default class UserCard extends React.Component {
                 elevation={this.state.raised ? '8' : '4'}
                 >
                     <CardActionArea>
-                    <Box display='flex' flexDirection='row' alignItems='center' p={2}>
+                    <Box display='flex' flexDirection='row' alignItems='center' p={2} style={{minWidth: '200px', maxWidth: '300px'}}>
                         <Avatar style={{width: '96px', height: '96px', }} src={this.state.avatarURL}/>
 
                         <Box
@@ -62,7 +62,7 @@ export default class UserCard extends React.Component {
                             <div style={{ fontSize: '24px', fontFamily: 'Quicksand-Regular' }}>
                                 {this.props.displayName}
                             </div>
-                            <div style={{ fontSize: '18px', fontFamily: 'Quicksand-Regular' }}>
+                            <div style={{ fontSize: '18px', fontFamily: 'Quicksand-Regular', overflowWrap: 'anywhere'}}>
                                 {this.props.roles}
                             </div>
                             <div style={{ fontSize: '18px', fontFamily: 'Quicksand-Regular' }}>

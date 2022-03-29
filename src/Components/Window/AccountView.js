@@ -1,17 +1,20 @@
-import { Avatar, Box, Button, Fade, Slide, Table, TableBody, TableCell, TableRow } from "@material-ui/core";
+import { Avatar, Box, Button, Collapse, Divider, Fade, Grid, IconButton, Slide, Table, TableBody, TableCell, TableRow, Typography } from "@material-ui/core";
 import React from "react";
 import firebase from "../../firebase";
 import './AccountView.css';
 import { Conversations } from './Conversations';
 import WaveForm from "./WaveForm";
 import PropTypes from 'prop-types';
+import { isMobile } from "react-device-detect";
+import { MoreVert } from "@material-ui/icons";
+import { AddComment } from "@material-ui/icons";
 
 /**
  * Populates the user's track list using WaveForm components
  */
 export function GetTracks(props) {
 
-    if (!props.tracks) return (<div>User has no tracks</div>);
+    if (!props.tracks) return (<div style={{color: '#e6eaff'}}>This user has not uploaded any tracks yet</div>);
 
     const objTracks = Object.values(props.tracks);
     var tracksArr = [];
@@ -25,18 +28,21 @@ export function GetTracks(props) {
             const newTrackFile = track.userID + '/audio/' + track.folderID + '/' + track.trackID;
 
             tracksArr = tracksArr.concat(
-                <WaveForm
-                    isChild={index === total - 1 ? false : true}
-                    controller={props.controller}
-                    router={props.router}
-                    audiofile={newTrackFile}
-                    trackname={track.trackname}
-                    metadata={track.metadata}
-                    description={track.description}
-                    folderID={track.folderID}
-                    trackID={track.trackID}
-                    userID={track.userID}
-                />
+                <div style={{width: '100%', marginTop: '12px', marginBottom: '12px'}}>
+                    <WaveForm
+                        isChild={index === total - 1 ? false : true}
+                        controller={props.controller}
+                        router={props.router}
+                        audiofile={newTrackFile}
+                        trackname={track.trackname}
+                        metadata={track.metadata}
+                        description={track.description}
+                        folderID={track.folderID}
+                        trackID={track.trackID}
+                        userID={track.userID}
+                    />
+                    <Divider/>
+                </div>
             );
 
         });
@@ -76,6 +82,7 @@ export class AccountView extends React.Component {
             avatarURL: '',
             userPrivacySettings: false,
             waveformArr: [],
+            expand: isMobile ? false : true,
         };
 
         this.setPrevPlayer = this.setPrevPlayer.bind(this);
@@ -97,6 +104,12 @@ export class AccountView extends React.Component {
         this.setState({
             prevPlayer: props,
         });
+    }
+
+    handleExpand = () => {
+        this.setState({
+            expand: !this.state.expand
+        })
     }
 
     /**
@@ -136,88 +149,116 @@ export class AccountView extends React.Component {
     }
 
     render() {
+        const avatarSize = isMobile ? '48px' : '96px';
 
         return (
             <div className="account-view">
-                <Box className="user-info" style={{ backgroundColor: "" }}>
+                <Box className={isMobile ? 'user-info-mobile' : "user-info"}>
                     <div>
                         <Slide in={true} direction="right">
-                            <Box display='flex' flexDirection='row' alignItems='center'>
-                                <Avatar
-                                    style={{ marginRight: '10px', width: '96px', height: '96px', }}
-                                    src={this.state.avatarURL}
-                                />
-                                <Box
-                                    display='flex'
-                                    flexDirection='column'
-                                    justifyContent='center'
-                                    alignItems='flex-start'
-                                    style={{ height: '96px', }}>
-                                    <Box style={{fontSize: '24px', fontFamily: 'Quicksand-Regular'}} >{this.state.userDisplayName}</Box>
-                                    <Box style={{fontSize: '18px', fontFamily: 'Quicksand-Regular'}}>
-                                        {(this.state.userRole) ? 
-                                            Object.keys(this.state.userRole).filter(role => this.state.userRole[role] === true).join("|") 
-                                            : ''}
-                                    </Box>
-                                    <Box style={{fontSize: '18px', fontFamily: 'Quicksand-Regular'}}>{(this.state.userLocation) ? this.state.userLocation : ''}</Box>
-                                </Box>
-                            </Box>
-                        </Slide>
-                        <Slide in={true} direction="right">
-                            <Box display='flex'
-                                flexDirection='column'
-                                alignItems='center'
-                                justifyContent='flex-start'
-                                height='100%'
+                            <Box display='flex' flexDirection='row' justifyContent='space-between' alignItems='center' style={{marginBottom: '10px',}}
+                            onClick={isMobile ? this.handleExpand : false}
                             >
-                                <Box 
-                                display='flex' 
-                                marginTop='12px' 
-                                flexDirection='row' 
-                                style={{ 
-                                    display: (!this.props.router.getUserEmail() || this.props.user === this.props.router.getUserID()) ? "none" : "true",
-                                }}
-                                >
-                                    <Button
-                                        variant='outlined'
-                                        size='small'
-                                        className={this.props.router.getStyles('b_MainWindow')} 
-                                        onClick={()=> 
+                                <div style={{width: isMobile ? '70%' : '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', overflowWrap: 'anywhere'}}>
+                                    <Avatar
+                                        style={{width: avatarSize, height: avatarSize}}
+                                        src={this.state.avatarURL}
+                                    />
+                                    <Box
+                                        display='flex'
+                                        flexDirection='column'
+                                        justifyContent='center'
+                                        alignItems='flex-start'
+                                        marginLeft='10px'
+                                    >
+                                        <Box style={{fontSize: isMobile ? '20px' : '24px', fontFamily: 'Quicksand-Regular'}} >{this.state.userDisplayName}</Box>
+                                        <Box style={{fontSize: isMobile ? '16px' : '18px', fontFamily: 'Quicksand-Regular'}}>
+                                            {(this.state.userRole) ? 
+                                                Object.keys(this.state.userRole).filter(role => this.state.userRole[role] === true).join(" | ") 
+                                                : ''}
+                                        </Box>
+                                        <Box style={{fontSize: isMobile ? '16px' : '18px', fontFamily: 'Quicksand-Regular'}}>{(this.state.userLocation) ? this.state.userLocation : ''}</Box>
+                                    </Box>
+                                </div>
+                                <div hidden={isMobile ? false : true}>
+                                    <IconButton 
+                                    style={{color: '#90a4ae', display: (!this.props.router.getUserEmail() 
+                                        || this.props.user === this.props.router.getUserID()) ? "none" : "true"}}
+                                    onClick={()=> 
                                         this.props.router.updateContent(
                                             <Conversations 
                                             router={this.props.router} 
                                             user={this.props.user}
                                             />
-                                        )}>Send Message
-                                    </Button>
-                                    <Button
-                                    variant='outlined'
-                                    size='small'
-                                    className={this.props.router.getStyles('b_MainWindow')} 
+                                        )}
                                     >
-                                        Add To Contacts
-                                    </Button>
-                                </Box>
-                                <Table>
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell align='left'><b>Genres</b></TableCell>
-                                            <TableCell>{this.state.userGenres}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell align='left'><b>Description</b></TableCell>
-                                            <TableCell >{this.state.userDescription}</TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
+                                        <AddComment/>
+                                    </IconButton>
+                                    <IconButton style={{color: '#90a4ae'}}>
+                                        <MoreVert/>
+                                    </IconButton>
+                                </div>
+                            </Box>
+                        </Slide>
+                        <Slide in={true} direction="right">
+                            <Box display='flex'
+                                flexDirection='column'
+                                justifyContent='flex-start'
+                                height='100%'
+                            >
+                                <Collapse in={this.state.expand}>
+                                    <Box 
+                                    display='flex' 
+                                    flexDirection='row' 
+                                    justifyContent='center'
+                                    style={{ 
+                                        display: (!this.props.router.getUserEmail() || this.props.user === this.props.router.getUserID()) ? "none" : "true",
+                                        marginBottom: '20px',
+                                        marginTop: '10px'
+                                    }}
+                                    >
+                                        <Box mx={2}>
+                                            <Button
+                                                variant='outlined'
+                                                size='small'
+                                                className={this.props.router.getStyles('b_MainWindow')} 
+                                                onClick={()=> 
+                                                this.props.router.updateContent(
+                                                    <Conversations 
+                                                    router={this.props.router} 
+                                                    user={this.props.user}
+                                                    />
+                                                )}>Send Message
+                                            </Button>
+                                        </Box>
+                                        <Box mx={2}>
+                                            <Button
+                                            variant='outlined'
+                                            size='small'
+                                            className={this.props.router.getStyles('b_MainWindow')} 
+                                            >
+                                                Add To Contacts
+                                            </Button>
+                                        </Box>
+                                    </Box>
+                                    <Grid container direction="column" spacing={2}>
+                                        <Divider style={{marginTop: '10px', marginBottom: '10px'}}/>
+                                        <Grid item><b>Genres</b></Grid>
+                                        <Grid item xs>Genre, list, items</Grid>
+                                        <Divider style={{marginTop: '10px', marginBottom: '10px'}}/>
+                                        <Grid item><b>Description</b></Grid>
+                                        <Grid item xs style={{overflowWrap: 'anywhere'}}>{this.state.userDescription}</Grid>
+                                        <Divider style={{marginTop: '10px', marginBottom: '10px'}}/>
+                                    </Grid>
+                                </Collapse>
                             </Box>
                         </Slide>
                     </div>
                 </Box>
                 <Fade in={true} timeout={1000}>
-                    <Box className="user-track" style={{ backgroundColor: "" }}>
+                    <Box className={isMobile ? 'user-track-mobile' : 'user-track'}>
                         {( (this.props.user === this.props.router.getUserID()) 
-                            || ((firebase.auth().currentUser && firebase.auth().currentUser.email) && !this.state.userPrivacySettings['TracksPublic'])
+                            || ((firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])
                             || (!(firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])) ? 
                             <GetTracks tracks={this.state.userAudio} controller={this} router={this.props.router} /> : "Please sign in to view this user's tracks"}
                     </Box>

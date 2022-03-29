@@ -5,6 +5,7 @@ import React from "react";
 import { isThisTypeNode } from "typescript";
 import firebase from '../../firebase';
 import { AccountView } from "./AccountView";
+import { isMobile } from "react-device-detect";
 
 /**
  * Titles for account creation steps
@@ -147,12 +148,16 @@ export class NewAccount extends React.Component {
     render() {
         return (
             <Grow in={true}>
-                <Box display='flex' flexDirection='column' justifyContent='stretch' alignItems='stretch' height='100%' style={{position: 'absolute', top: 0, left: 0, right: 0}}>
+                <Box display='flex' flexDirection='column' justifyContent='stretch' alignItems='stretch' height='100%' 
+                style={{position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#2f384770'}}
+                >
                     <Box display='flex' justifyContent='center' textAlign='center' style={{width:'100%', height: '10%', }}>
-                        <CardHeader title="Create New Account"/>
+                        <CardHeader className={this.props.router.getStyles('appBackground')} title="Create New Account"/>
                     </Box>
 
-                    <Box display='flex' flexDirection='column' justifyContent='center' textAlign='center' m='auto' style={{width: '40%', height: '80%', }}>
+                    <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center' textAlign='center' m='auto' 
+                    style={{width: isMobile ? '70%' : '100%', height: '80%', overflowY: isMobile ? 'auto' : 'hidden'}}
+                    >
                         <Slide
                             in={this.state.inProp}
                             onExited={() => this.setState({ inProp: !this.state.inProp, slideStep: this.state.activeStep })}
@@ -160,7 +165,7 @@ export class NewAccount extends React.Component {
                         >
                             <div>
                                 <div hidden={(this.state.slideStep === 0 ? false : true)}>
-                                    <Box display='flex' flexDirection='column'>
+                                    <Box display='flex' flexDirection='column' style={{width: isMobile ? '100%' : '300px'}}>
                                         <TextField
                                             label="New Email"
                                             name='userEmail'
@@ -168,7 +173,6 @@ export class NewAccount extends React.Component {
                                             size='medium'
                                             type='email'
                                             required='true'
-                                            fullWidth
                                             onChange={this.handleChange}
                                         />
                                         <TextField
@@ -178,7 +182,6 @@ export class NewAccount extends React.Component {
                                             size='medium'
                                             type='password'
                                             required='true'
-                                            fullWidth
                                             onChange={this.handleChange}
                                         />
                                     </Box>
@@ -215,7 +218,9 @@ export class NewAccount extends React.Component {
                                             size='medium'
                                             onChange={this.handleChange}
                                         />
-                                        <h3>User Roles:</h3>
+                                        <div style={{ color: '#e6eaff' }}>
+                                            <h3>User Roles:</h3>
+                                        </div>
                                         <Box display='flex' flexDirection='row' justifyContent='center' flexWrap='wrap'>
                                             <FormControlLabel
                                                 control={<Checkbox id='0' name="Producer" onChange={this.handleChange} />}

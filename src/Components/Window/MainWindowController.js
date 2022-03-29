@@ -32,6 +32,7 @@ export class MainWindowController extends React.Component {
             userDisplayName: '',
             refresh: false,
             isLoading: false,
+            loadingMessage: 'Loading...',
             styleProvider: this.props.styleProviderClass,
             headerBar: <Header router={this}/>,
         };
@@ -76,12 +77,14 @@ export class MainWindowController extends React.Component {
     /**
      * Controls the loading backdrop for the main window
      * @param {boolean} val The loading boolean
+     * @param {string} message Omittable message to be displayed during loading
      * @example
      * this.props.router.setLoadingState(false) //The loading backdrop can be used when file transfers or loading is done
      */
-    setLoadingState(val) {
+    setLoadingState(val, message) {
         this.setState({
             isLoading: val,
+            loadingMessage: message ? message : '',
         })
     }
 
@@ -136,18 +139,22 @@ export class MainWindowController extends React.Component {
         firebase.auth().onAuthStateChanged(function (user) {
             if (user && !user.isAnonymous) {
                 if (user) {
-                    this.setState({
-                        userID: user.uid,
-                        userEmail: user.email,
-                        userDisplayName: user.displayname,
-                        content: <AccountView user={user.uid} router={this} />,
-                    }, () => this.refreshWindow());
+
+                    firebase.database().ref('users/' + user.uid + '/displayname').once('value').then((data) => {
+                        this.setState({
+                            userID: user.uid,
+                            userEmail: user.email,
+                            userDisplayName: data.val(),
+                            content: <AccountView user={user.uid} router={this} />,
+                        }, () => this.refreshWindow());
+                    });
+
                 }
             } 
             if (!user) {
                 console.log('User logout or no user signed in');
                 this.setState({
-                    content: <Conversations router={this} />,
+                    content: <Introduction router={this} />,
                 }, () => this.refreshWindow());
             }
 
@@ -186,8 +193,10 @@ export class MainWindowController extends React.Component {
             <div>
                 <Backdrop style={{zIndex: '10'}} open={this.state.isLoading}>
                     <Card 
-                    style={{width: '20%', height: '20%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly'}}>
-                        <CircularProgress/>Loading . . .
+                    style={{width: isMobile ? '50%' : '30%', height: isMobile ? '30%' : '20%', display: 'flex', flexDirection: 'column', alignItems: 'center', 
+                    justifyContent: 'space-evenly', textAlign: 'center'}}>
+                        <CircularProgress/>
+                        <div style={{marginLeft: '5%', marginRight: '5%'}}>{this.state.loadingMessage}</div>
                     </Card>
                 </Backdrop>
                 
@@ -196,6 +205,7 @@ export class MainWindowController extends React.Component {
                     {
                         (!isMobile) ? 
                         <Card elevation={3} className="main-window-card">
+                            <img style={{zIndex: -2, position:'absolute', top: 0, left: 0, width: '100%', height: '100%'}} src='backgroundtest.jpg'/>
                             {this.state.content}
                         </Card> :
                         <Grid 
@@ -206,6 +216,7 @@ export class MainWindowController extends React.Component {
                         style={{backgroundColor: 'white', position: 'fixed', top: '58px', bottom: '0'}}
                         zIndex='0'
                         >
+                            <img style={{zIndex: -2, position:'absolute', top: 0, left: 0, width: '100%', height: '100%'}} src='backgroundtest.jpg'/>
                             <Grid item >{this.state.content}</Grid>
                         </Grid>
                     }

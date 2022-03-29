@@ -45,11 +45,12 @@ class CommentObject extends React.Component {
         const userRef = firebase.database().ref('users/' + this.props.userID);
         var userParse = '';
 
-        userRef.on('value', (snapshot) => {
+        userRef.once('value', (snapshot) => {
             userParse = snapshot.val();
             this.setState({
                 userDisplayName: (userParse.displayname) ? userParse.displayname : 'Anonymous',
             });
+            
         });
     }
 
