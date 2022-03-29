@@ -33,14 +33,13 @@ module.exports = function override(config, env) {
         }
     );
 
-    
-
     config.entry = './src/index.js';
 
     config.output.path = path.resolve(__dirname, 'build');
     config.output.publicPath = '/';
     config.output.filename = 'bundle.js';
 
-    
+    config.module.noParse = /typescript/;
+
     return config
 }
