@@ -1,8 +1,11 @@
-import { Box, Button, CardHeader, Checkbox, FormControlLabel, Grow, IconButton, Slide, Step, StepLabel, Stepper, TextField } from "@material-ui/core";
+import { Box, Button, CardHeader, Checkbox, FormControlLabel, Grid, Grow, IconButton, MobileStepper, Slide, Step, StepLabel, Stepper, TextField, Tooltip} from "@material-ui/core";
 import NavigateBeforeRoundedIcon from '@material-ui/icons/NavigateBeforeRounded';
 import NavigateNextRoundedIcon from '@material-ui/icons/NavigateNextRounded';
 import React from "react";
+import { isThisTypeNode } from "typescript";
 import firebase from '../../firebase';
+import { AccountView } from "./AccountView";
+import { isMobile } from "react-device-detect";
 
 /**
  * Titles for account creation steps
@@ -62,6 +65,12 @@ export class NewAccount extends React.Component {
 
     }
 
+    checkValid() {
+        return (this.state.slideStep === 0 && this.state.userEmail && this.state.userPassword 
+            && this.state.userEmail.includes('@') && this.state.userPassword.length >= 8) 
+            || (this.state.slideStep === 1 && this.state.userDisplayName);
+    }
+
     /**
      * Creates a new account using Firebase's Auth service. If a user matched anonymously, the anonymous session account can be linked and an uploaded track 
      * will be added to the new account automatically.
@@ -86,6 +95,7 @@ export class NewAccount extends React.Component {
                     var user = usercred.user;
                     firebase.database().ref('users/' + user.uid).update(userData);
                     this.props.router.setUser(user);
+                    this.props.router.updateContent(<AccountView router={this.props.router} user={user.uid} />)
                 }).catch((error) => {
                     console.log("Error upgrading anonymous account", error);
                 });
@@ -108,166 +118,186 @@ export class NewAccount extends React.Component {
         this.props.router.previousHandler();
     };
 
-    backButton = () => {
+    backButton = (event) => {
+        event.preventDefault();
+
         const { activeStep } = this.state;
 
         if (activeStep > 0) {
             this.setState({
                 activeStep: activeStep - 1,
                 inProp: true,
-            }, () => this.setState({inProp: false}));
+            }, () => this.setState({inProp: false, sectionValid: this.checkValid()}));
         }
     }
 
-    nextButton = () => {
+    nextButton = (event) => {
+        event.preventDefault();
+
         const { activeStep } = this.state;
 
         if (activeStep < steps.length-1) {
             this.setState({
                 activeStep: activeStep + 1,
                 inProp: true,
-            }, () => this.setState({inProp: false}));
+            }, () => this.setState({inProp: false, sectionValid: this.checkValid()}));
         }
+
     }
 
     render() {
         return (
             <Grow in={true}>
-                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
-                        <CardHeader title="Create New Account"/>
-                        <Box display='flex' flexDirection='row' justifyContent='space-between' alignItems='center' mx={10}>
-                            <Box >
-                                <div style={{visibility: (this.state.activeStep === 0 ? 'hidden' : 'visible')}}>
-                                    <IconButton 
-                                    onClick={() => this.backButton()}
-                                    >
-                                        <NavigateBeforeRoundedIcon fontSize='large'/>
-                                    </IconButton>
-                                </div>
-                            </Box>
-                            <Box display='flex' width='50%' flexDirection='column' justifyContent='center' alignSelf='center'>
-                                <Slide 
-                                    in={this.state.inProp} 
-                                    onExited={() => this.setState({inProp: !this.state.inProp, slideStep: this.state.activeStep})}
-                                    direction="up"
-                                >
-                                    <div>
-                                        <div hidden={(this.state.slideStep === 0  ? false : true)}>
-                                            <Box display='flex' flexDirection='column'>
-                                                <TextField
-                                                    label="New Email"
-                                                    name='userEmail'
-                                                    placeholder='. . .'
-                                                    size='medium'
-                                                    type='email'
-                                                    onChange={this.handleChange}
-                                                />
-                                                <TextField
-                                                    label="New Password"
-                                                    name='userPassword'
-                                                    placeholder='. . .'
-                                                    size='medium'
-                                                    type='password'
-                                                    onChange={this.handleChange}
-                                                />
-                                            </Box>
-                                        </div>
+                <Box display='flex' flexDirection='column' justifyContent='stretch' alignItems='stretch' height='100%' 
+                style={{position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#2f384770'}}
+                >
+                    <Box display='flex' justifyContent='center' textAlign='center' style={{width:'100%', height: '10%', }}>
+                        <CardHeader className={this.props.router.getStyles('appBackground')} title="Create New Account"/>
+                    </Box>
 
-                                        <div hidden={(this.state.slideStep === 1  ? false : true)}>
-                                            <Box display='flex' flexDirection='column'>
-                                                <TextField
-                                                    label="Display Name"
-                                                    name='userDisplayName'
-                                                    placeholder='. . .'
-                                                    size='medium'
-                                                    onChange={this.handleChange}
-                                                />
-                                                <TextField
-                                                    label="Description"
-                                                    name='userDescription'
-                                                    placeholder='. . .'
-                                                    size='medium'
-                                                    onChange={this.handleChange}
-                                                />
-                                                <TextField
-                                                    label="Genres"
-                                                    name='userGenres'
-                                                    placeholder='. . .'
-                                                    size='medium'
-                                                    onChange={this.handleChange}
-                                                />
-                                                <TextField
-                                                    label="Location"
-                                                    name='userLocation'
-                                                    placeholder='. . .'
-                                                    size='medium'
-                                                    onChange={this.handleChange}
-                                                />
-                                                <h2 style={{textAlign: 'center'}}>
-                                                User Roles:
-                                                </h2>
-                                                <Box display='flex' flexDirection='row' alignSelf='center'  >
-                                                    <FormControlLabel
-                                                        control={<Checkbox id='0' name="Producer" onChange={this.handleChange} />}
-                                                        label="Producer"
-                                                    />
-                                                    <FormControlLabel
-                                                        control={<Checkbox id='1' name="Engineer" onChange={this.handleChange} />}
-                                                        label="Engineer"
-                                                    />
-                                                    <FormControlLabel
-                                                        control={<Checkbox id='2' name="Composer" onChange={this.handleChange} />}
-                                                        label="Composer"
-                                                    />
-                                                    <FormControlLabel
-                                                        control={<Checkbox id='3' name="Artist" onChange={this.handleChange} />}
-                                                        label="Artist"
-                                                    />
-                                                </Box>
-                                            </Box>
-                                        </div>
-
-                                        <div hidden={(this.state.slideStep === 2  ? false : true)}>
-                                            <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center'>
-                                                <FormControlLabel
-                                                    control={<Checkbox id='4' name="BrowseUsers" defaultChecked={true} onChange={this.handleChange} />}
-                                                    label="Show your profile on the public browse users page?"
-                                                />
-                                                <FormControlLabel
-                                                    control={<Checkbox id='5' name="TracksPublic" defaultChecked={true} onChange={this.handleChange} />}
-                                                    label="Allow unregistered users to view your tracks?"
-                                                />
-                                                <form onSubmit={this.handleAccountCreation}>
-                                                    <Box m={2}>
-                                                        <Button variant='outlined' className={this.props.router.getStyles('b_MainWindow')} type='submit'>Finish</Button>
-                                                    </Box>
-                                                </form>
-                                            </Box>
-                                        </div>
-                                    </div>
-                                </Slide>
-                            </Box>
-                            <Box>
-                            <div style={{visibility: (this.state.activeStep === 2 ? 'hidden' : 'visible')}}>
-                                    <IconButton  
-                                    onClick = {() => this.nextButton()}
-                                    >
-                                        <NavigateNextRoundedIcon fontSize='large'/>
-                                    </IconButton>
-                                </div>
-                            </Box>
-                        </Box>
-                        <Stepper
-                            activeStep={this.state.activeStep}
-                            alternativeLabel
+                    <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center' textAlign='center' m='auto' 
+                    style={{width: isMobile ? '70%' : '100%', height: '80%', overflowY: isMobile ? 'auto' : 'hidden'}}
+                    >
+                        <Slide
+                            in={this.state.inProp}
+                            onExited={() => this.setState({ inProp: !this.state.inProp, slideStep: this.state.activeStep })}
+                            direction="up"
                         >
-                            {steps.map((label) => (
-                                <Step key={label}>
-                                    <StepLabel orientation="vertical">{label}</StepLabel>
-                                </Step>
-                            ))}
-                        </Stepper>
-                        
+                            <div>
+                                <div hidden={(this.state.slideStep === 0 ? false : true)}>
+                                    <Box display='flex' flexDirection='column' style={{width: isMobile ? '100%' : '300px'}}>
+                                        <TextField
+                                            label="New Email"
+                                            name='userEmail'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            type='email'
+                                            required='true'
+                                            onChange={this.handleChange}
+                                        />
+                                        <TextField
+                                            label="New Password"
+                                            name='userPassword'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            type='password'
+                                            required='true'
+                                            onChange={this.handleChange}
+                                        />
+                                    </Box>
+                                </div>
+
+                                <div hidden={(this.state.slideStep === 1 ? false : true)} >
+                                    <Box display='flex' flexDirection='column' style={{ minWidth: '100px' }}>
+                                        <TextField
+                                            label="Display Name"
+                                            name='userDisplayName'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            required='true'
+                                            onChange={this.handleChange}
+                                        />
+                                        <TextField
+                                            label="Description"
+                                            name='userDescription'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            onChange={this.handleChange}
+                                        />
+                                        <TextField
+                                            label="Genres"
+                                            name='userGenres'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            onChange={this.handleChange}
+                                        />
+                                        <TextField
+                                            label="Location"
+                                            name='userLocation'
+                                            placeholder='. . .'
+                                            size='medium'
+                                            onChange={this.handleChange}
+                                        />
+                                        <div style={{ color: '#e6eaff' }}>
+                                            <h3>User Roles:</h3>
+                                        </div>
+                                        <Box display='flex' flexDirection='row' justifyContent='center' flexWrap='wrap'>
+                                            <FormControlLabel
+                                                control={<Checkbox id='0' name="Producer" onChange={this.handleChange} />}
+                                                label="Producer"
+                                            />
+                                            <FormControlLabel
+                                                control={<Checkbox id='1' name="Engineer" onChange={this.handleChange} />}
+                                                label="Engineer"
+                                            />
+                                            <FormControlLabel
+                                                control={<Checkbox id='2' name="Composer" onChange={this.handleChange} />}
+                                                label="Composer"
+                                            />
+                                            <FormControlLabel
+                                                control={<Checkbox id='3' name="Artist" onChange={this.handleChange} />}
+                                                label="Artist"
+                                            />
+                                        </Box>
+                                    </Box>
+                                </div>
+
+                                <div hidden={(this.state.slideStep === 2 ? false : true)}>
+                                    <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center'>
+                                        <FormControlLabel
+                                            control={<Checkbox id='4' name="BrowseUsers" defaultChecked={true} onChange={this.handleChange} />}
+                                            label="Show your profile on the public browse users page?"
+                                        />
+                                        <FormControlLabel
+                                            control={<Checkbox id='5' name="TracksPublic" defaultChecked={true} onChange={this.handleChange} />}
+                                            label="Allow unregistered users to view your tracks?"
+                                        />
+                                        <form onSubmit={this.handleAccountCreation}>
+                                            <Box m={2}>
+                                                <Button variant='outlined' className={this.props.router.getStyles('b_MainWindow')} type='submit'>Finish</Button>
+                                            </Box>
+                                        </form>
+                                    </Box>
+                                </div>
+                            </div>
+                        </Slide>
+                    </Box>
+
+                    <Box display='flex' flexDirection='row' justifyContent='center' textAlign='center' style={{width: '100%', height: '10%', zIndex: 1}} className={this.props.router.getStyles('defaultBar')}>
+                        <MobileStepper
+                            variant="dots"
+                            steps={3}
+                            position="static"
+                            activeStep={this.state.activeStep}
+                            className={this.props.router.getStyles('defaultBar')}
+                            backButton={
+                                <Button startIcon={<NavigateBeforeRoundedIcon fontSize='large'/>} 
+                                size="medium" onClick={this.backButton} disabled={this.state.activeStep === 0}
+                                style={{position: 'absolute', left: '2%'}}
+                                className={this.props.router.getStyles('defaultBar')}
+                                >
+                                    Back
+                                </Button>
+                            }
+                            nextButton={
+                                <Tooltip
+                                    title='Please fill out all required fields'
+                                    arrow={true}
+                                    placement='top'
+                                    disableHoverListener={this.state.sectionValid}
+                                >
+                                    <Button endIcon={<NavigateNextRoundedIcon fontSize='large' />}
+                                        size="medium" onClick={this.nextButton} disabled={!this.checkValid()}
+                                        style={{ position: 'absolute', right: '2%' }}
+                                        className={this.props.router.getStyles('defaultBar')}
+                                    >
+                                        Next
+                                    </Button>
+                                </Tooltip>
+                            }
+                        />
+                    </Box>
+
                 </Box>
             </Grow>
         );

@@ -41,8 +41,11 @@ export class Login extends React.Component {
     render() {
         return (
             <Grow in={true}>
-                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
-                        <CardHeader title="Login to Ruffmix"/>
+                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'
+                style={{position:'absolute', left: 0, top: 0, right: 0,}}>
+                        <Box>
+                            <CardHeader className={this.props.router.getStyles('appBackground')} title="Login to Ruffmix"/>
+                        </Box>
                         <Box display='flex' flexDirection='column' className={this.props.router.getStyles('formContent')}>
                             <form onSubmit={this.handleLogin}>
                                 <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center' >

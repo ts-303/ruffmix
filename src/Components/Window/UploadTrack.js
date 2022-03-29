@@ -6,6 +6,7 @@ import { AccountView } from './AccountView';
 import './UploadTrack.css';
 import WaveForm from "./WaveForm";
 import PropTypes from 'prop-types';
+import { isMobile } from "react-device-detect";
 
 /**
  * The UploadTrack window allows a registered user to upload a new track to their profile. 
@@ -35,6 +36,9 @@ export class UploadTrack extends React.Component {
             other: false,
             trackPreviewPlayer: '',
             loadingProgress: 0,
+            cleanupFolderID: '',
+            cleanupTrackID: '',
+            uploadSuccess: '',
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -106,9 +110,11 @@ export class UploadTrack extends React.Component {
         //var newFileName = this.fileInput.current.files[0].name;
 
         const storageRef = firebase.storage().ref().child(this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
-        this.props.router.setLoadingState(true);
+        this.props.router.setLoadingState(true, 'Uploading track...');
 
-        firebase.database().ref('users/' + this.state.userID + '/audio/' + newFolderID + '/' + newTrackID).set({
+        const newTrackRef = firebase.database().ref('users/' + this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
+
+        newTrackRef.set({
             folderID: newFolderID,
             trackID: newTrackID,
             userID: this.state.userID,
@@ -120,12 +126,35 @@ export class UploadTrack extends React.Component {
             alert('Track Data Set fail' + error);
         });
 
-        storageRef.put(newAudioFile).then((snapshot) => {
-            console.log('File upload success');
-            this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()} />);
-        }).then(() => this.props.router.setLoadingState(false)).catch((error) => {
-            alert('Track Upload fail' + error);
+        this.setState({
+            cleanupFolderID: newFolderID,
+            cleanupTrackID: newTrackID,
+            uploadSuccess: false, 
         });
+
+        var uploadTask = storageRef.put(newAudioFile);
+
+        uploadTask.on('state_changed', function progress(snapshot) {
+            // var percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            // uploader.value = percentage;
+
+        }, function error(err) {
+            newTrackRef.remove().catch(function (error) {
+                console.log("User DB cleanup fail: " + error.message)
+            });
+
+            alert('Track Upload fail' + error);
+            this.props.router.setLoadingState(false);
+
+        }, function complete() {
+
+            console.log('File upload success');
+            this.setState({uploadSuccess: true});
+            this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()} />);
+            this.props.router.setLoadingState(false);
+
+
+        }.bind(this));
 
         event.preventDefault();
     }
@@ -157,15 +186,35 @@ export class UploadTrack extends React.Component {
         })
     }
 
+    componentWillUnmount() {
+        if (this.state.uploadSuccess === false) {
+            firebase.database().ref('users/' + this.state.userID + '/audio/'
+            + this.state.cleanupFolderID + '/' + this.state.cleanupTrackID).remove().catch(function (error) {
+                console.log("User DB cleanup fail: " + error.message)
+            });
+        }
+    }
+
     render() {
         return (
             <Grow in={true}>
-                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
-                    <CardHeader title={this.props.newVersionFolder ? 'Upload New Track Version' : 'Upload New Track'} />
-                    <Box display='flex' flexDirection='column'>
-                        <Collapse in={this.state.trackPreviewPlayer} display='flex' flexDirection='column' justifyContent='flex-start'>
-                            <Box height='64px' pb={7}>{this.state.trackPreviewPlayer}</Box>
-                        </Collapse>
+                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center' 
+                style={{position: 'absolute', top: 0, left: 0, bottom: 0, right: 0, backgroundColor: '#2f384770'}}
+                >
+                    <Box height="10%" style={{position: 'absolute', top: 0, left: 0, right:0}}>
+                        <CardHeader className={this.props.router.getStyles('appBackground')} 
+                        title={this.props.newVersionFolder ? 'Upload New Track Version' : 'Upload New Track'} 
+                        />
+                    </Box>
+                    <Box height='80%' width={isMobile ? '80%' : '50%'} display='flex' flexDirection='column' justifyContent='center' alignSelf='center' 
+                    style={{position: 'absolute', top: '10%', bottom: '10%', textAlign: 'center', overflowY: 'auto'}}
+                    >
+                        <Box>
+                            <Collapse in={this.state.trackPreviewPlayer} display='flex' flexDirection='column'>
+                                <div height='128px'>{this.state.trackPreviewPlayer}</div>
+                            </Collapse>
+                        </Box>
+                        <Box>
                         <form onSubmit={this.handleTrackSubmit}>
                             <Box display='flex' flexDirection='column' alignItems='center' className={this.props.router.getStyles('formContent')}>
                                 <FormControl>
@@ -223,7 +272,9 @@ export class UploadTrack extends React.Component {
                                                 label="Other"
                                             />
                                             <Collapse in={this.state.other ? true : false} display='flex' flexDirection='column'>
-                                                    <div>Please specify "Other" tag (Limit 12 characters):</div>
+                                                    <div className={this.props.router.getStyles('appBackground')}>
+                                                        Please specify "Other" tag (Limit 12 characters):
+                                                    </div>
                                                     <TextField
                                                         name='metaDataOther'
                                                         placeholder='. . .'
@@ -239,8 +290,9 @@ export class UploadTrack extends React.Component {
                                 <Button type='submit' variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Upload Track</Button>
                             </Box>
                         </form>
+                        </Box>
                     </Box>
-                    <Box></Box>
+                    <Box height='10%'></Box>
                 </Box>
             </Grow>
         );

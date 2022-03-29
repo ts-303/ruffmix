@@ -9,6 +9,8 @@ import MenuIcon from '@material-ui/icons/Menu';
 import React from 'react';
 import { Conversations } from './Window/Conversations';
 import { PropTypes } from 'prop-types';
+import { isMobile } from 'react-device-detect';
+import { HowItWorks } from './Window/HowItWorks';
 
 /**
  * The HeaderMenu returns navigation elements for managing the current user
@@ -43,8 +45,20 @@ export default function HeaderMenu(props) {
         event.preventDefault();
     }
 
+    const about = (event) => {
+        props.router.updateContent(<HowItWorks router={props.router}/>);
+        handleClose(event);
+        event.preventDefault();
+    }
+
     const viewMessages = (event) => {
         props.router.updateContent(<Conversations router={props.router} user={props.router.getUserID()}/>);
+        handleClose(event);
+        event.preventDefault();
+    }
+
+    const logIn = (event) => {
+        props.header.login();
         handleClose(event);
         event.preventDefault();
     }
@@ -80,9 +94,9 @@ export default function HeaderMenu(props) {
                     <Grow
                         {...TransitionProps}
                         in={open}
-                        style={{ transformOrigin: 'right' }}
+                        style={{ transformOrigin: 'right', margin: isMobile ? 0 : true }}
                     >
-                        <Paper square elevation={0} className={props.router.getStyles('headerMenu')}>
+                        <Paper square elevation={isMobile ? 6 : 0} className={props.router.getStyles('headerMenu')}>
                             <ClickAwayListener onClickAway={handleClose}>
                                 <MenuList autoFocusItem={open}>
                                     <div hidden={(props.router.getUserID() === '') ? true : false}>
@@ -94,11 +108,11 @@ export default function HeaderMenu(props) {
                                         <Divider variant='middle' className={props.router.getStyles('divider')} />
                                         <MenuItem onClick={logOut}>Logout</MenuItem>
                                     </div>
-                                    <div>
-                                        <MenuItem onClick={handleClose}>---</MenuItem>
-                                        <Divider variant='middle' className={props.router.getStyles('divider')} />
-                                        <MenuItem onClick={handleClose}>About</MenuItem>
+                                    <div hidden={(props.router.getUserID() === '') ? false : true}>
+                                        <MenuItem onClick={logIn}>Login</MenuItem>
                                     </div>
+                                    <Divider variant='middle' className={props.router.getStyles('divider')} />
+                                    <MenuItem onClick={about}>About</MenuItem>
                                 </MenuList>
                             </ClickAwayListener>
                         </Paper>

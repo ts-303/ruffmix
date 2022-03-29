@@ -1,11 +1,14 @@
-import { Box, Button, CardHeader, Checkbox, CircularProgress, Collapse, FormControlLabel, Grow, IconButton, Input, InputAdornment, Slide, Step, StepLabel, Stepper, TextField, Tooltip } from "@material-ui/core";
+import { Box, Button, CardHeader, Checkbox, CircularProgress, Collapse, Divider, FormControlLabel, Grow, IconButton, Input, InputAdornment, MobileStepper, Slide, Step, StepLabel, Stepper, TextField, Tooltip } from "@material-ui/core";
 import NavigateBeforeRoundedIcon from '@material-ui/icons/NavigateBeforeRounded';
 import NavigateNextRoundedIcon from '@material-ui/icons/NavigateNextRounded';
 import PublishIcon from '@material-ui/icons/Publish';
 import React from "react";
+import { isMobile } from "react-device-detect";
 import firebase from '../../firebase';
 import { NewAccount } from "./NewAccount";
 import WaveForm from "./WaveForm";
+import { DoubleArrow } from "@material-ui/icons";
+import { isThisTypeNode } from "typescript";
 
 /**
  * Titles for describing the steps 
@@ -32,6 +35,7 @@ const initialState = {
     other: false,
     trackIsPublic: false,
     trackMatchPlayer: '',
+    prevPlayer: "",
     mFolderID: '',
     mTrackID: '',
     mTrackName: '',
@@ -73,12 +77,31 @@ export class Match extends React.Component {
         this.cleanup();
         this.state = initialState;
         firebase.database().ref('matching/').off('child_added');
+        
+    }
+
+    /**
+     * 
+     * @returns The player last toggled to play. This is used with the WaveForm component to stop current playback when a new player is toggled to play. 
+     */
+     getPrevPlayer() {
+        return this.state.prevPlayer;
+    }
+
+    /**
+     * Sets prevPlayer to be a new WaveForm component.
+     * @param {Object} props The new WaveForm component containing a player to be paused when needed.  
+     */
+    setPrevPlayer = (props) => {
+        this.setState({
+            prevPlayer: props,
+        });
     }
 
     /**
      * @returns A promise to remove matching data on firebase when necessary
      */
-    cleanup = () => {
+    cleanup = (errorStatus) => {
         return new Promise((resolve, reject) => {
             if (this.state.currentUserID) {
                 firebase.database().ref('matching/' + this.state.currentUserID).remove().catch((error) => {
@@ -91,13 +114,13 @@ export class Match extends React.Component {
                     });
                 }
 
-                if (!this.state.trackIsPublic && !this.state.keepTracks) {
+                if ((!this.state.trackIsPublic && !this.state.keepTracks) || errorStatus) {
                     firebase.database().ref('users/' + this.state.currentUserID + '/audio/'
                         + this.state.currentFolderID + '/' + this.state.currentTrackID).remove().catch(function (error) {
                             console.log("User DB cleanup fail: " + error.message)
                         });
 
-                    firebase.storage().ref().child('audio/' + this.state.currentFolderID + '/' + this.state.currentTrackID).delete().catch((error) => {
+                    firebase.storage().ref().child(this.state.currentUserID + '/audio/' + this.state.currentFolderID + '/' + this.state.currentTrackID).delete().catch((error) => {
                         console.log('Storage cleanup error: ' + error);
                     });
                 }
@@ -195,6 +218,7 @@ export class Match extends React.Component {
         const waveObj = <WaveForm
             isChild={false}
             preview={true}
+            previewSize={isMobile ? window.innerWidth*0.7 : window.innerWidth*0.4}
             router={this.props.router}
             audiofile={args}
             trackname={this.state.trackName}
@@ -214,12 +238,13 @@ export class Match extends React.Component {
 
         const matchingRef = firebase.database().ref('matching/' + this.state.currentUserID + '/matchObject');
 
-        let matchingListener = matchingRef.on('value', (snapshot) => {
+        let matchingListener = matchingRef.once('value', (snapshot) => {
             const matchObj = snapshot.val();
 
             const usersRef = firebase.database().ref('users/' + matchObj.matchID + '/audio/' + matchObj.folder + '/' + matchObj.track);
+            const commentRef = firebase.database().ref('users/' + matchObj.matchID + '/audio/' + matchObj.folder + '/' + matchObj.track + '/commentdata/1');
 
-            let usersListener = usersRef.on('value', (snapshot) => {
+            let usersListener = usersRef.once('value', (snapshot) => {
                 if (snapshot.exists()) {
                     const trackData = snapshot.val();
 
@@ -233,6 +258,7 @@ export class Match extends React.Component {
                         folderID={matchObj.folder}
                         trackID={matchObj.track}
                         userID={matchObj.matchID}
+                        expanded={true}
                     />;
 
                     this.setState({
@@ -242,10 +268,12 @@ export class Match extends React.Component {
                         mTrackName: trackData.trackname,
                         mMetaData: trackData.metadata,
                         mTrackDescription: trackData.description,
+                    }, () => {
+                        //Allows user to continue after a comment is made
+                        commentRef.once('child_added', (snapshot) => {
+                            this.setState({ sectionValid: true })
+                        });
                     });
-
-                    matchingRef.off('value', matchingListener);
-                    usersRef.off('value', usersListener);
 
                     firebase.database().ref('matching/' + this.state.currentUserID).remove().catch(function (error) {
                         console.log("Matching DB cleanup fail: " + error.message)
@@ -363,10 +391,11 @@ export class Match extends React.Component {
                             });
                         }
                         else {
-                            console.log('Match session creation fail - session canelled during upload');
+                            console.log('Match session creation fail - session cancelled during upload');
                             storageRef.delete();
                         }
                     }).catch((error) => {
+                        this.cleanup(true);
                         alert('File Upload fail' + error);
                     });
                 });
@@ -407,9 +436,21 @@ export class Match extends React.Component {
             folderID={this.state.currentFolderID}
             trackID={this.state.currentTrackID}
             userID={this.state.currentUserID}
+            expanded={true}
+            disableComment={true}
         />;
 
-        this.setState({ reviewedTrackPlayer: reviewedTrack }, this.nextButton());
+        this.setState({ reviewedTrackPlayer: reviewedTrack, sectionValid: false }, () => {
+            this.nextButton();
+
+            const commentRef = 
+                firebase.database().ref('users/' + this.state.currentUserID + '/audio/' + this.state.currentFolderID + '/' 
+                + this.state.currentTrackID + '/commentdata/1');
+
+            commentRef.once('child_added', (snapshot) => {
+                this.setState({ sectionValid: true })
+            });
+        });
 
         event.preventDefault();
     }
@@ -417,184 +458,302 @@ export class Match extends React.Component {
     render() {
         return (
             <Grow in={true}>
-                <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' textAlign='center'>
-                    <CardHeader title="Instant Matching" />
-                    <Box height='30%' width='100%' display='flex' flexDirection='column' justifyContent='center' alignItems='center'>
-                        <div hidden={(this.state.slideStep >= 3) ? true : false}>
-                            <Collapse in={this.state.trackPreviewPlayer}>
-                                <Box>{this.state.trackPreviewPlayer}</Box>
-                            </Collapse>
-                        </div>
-                    </Box>
-
-                    <Box display='flex' flexDirection='row' width='70%' justifyContent='space-between' alignSelf='center' alignItems='center'>
-                        <Box>
-                            <div style={{ visibility: (this.state.activeStep === 0 || this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
-                                <IconButton
-                                    onClick={() => this.backButton()}
-                                >
-                                    <NavigateBeforeRoundedIcon fontSize='large'/>
-                                </IconButton>
-                            </div>
-                        </Box>
-                        <Box display='flex' flexDirection='column' alignContent='center'>
-                            <h2>{steps[this.state.activeStep]}</h2>
-                        </Box>
-                        <Box>
-                            <Tooltip
-                                title='Please fill out all required fields'
-                                arrow={true}
-                                placement='right'
-                                disableHoverListener={this.state.sectionValid}
-                            >
-                                <div style={{ visibility: (this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
-                                    <IconButton
-                                        onClick={() => this.nextButton()}
-                                        disabled={!this.state.sectionValid}
-                                    >
-                                        <NavigateNextRoundedIcon fontSize='large'/>
-                                    </IconButton>
-                                </div>
-                            </Tooltip>
-                        </Box>
-                    </Box>
-
-                    <Box display='flex' height='70%' width='50%' flexDirection='column' justifyContent='center' alignSelf='center' mx={5}>
-                        <Slide
-                            in={this.state.inProp}
-                            onExited={() => this.setState({ inProp: !this.state.inProp, slideStep: this.state.activeStep })}
-                            direction="up"
+                <Box display='flex' flexDirection='column' justifyContent='center' textAlign='center'
+                style={{position:'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: '#2f384770'}}
+                >
+                    {/*Header*/}
+                    <Box height='10%' style={{position: 'absolute', top: 0, left: 0, right: 0}}>
+                        <Box><CardHeader title="Instant Matching" className={this.props.router.getStyles('appBackground')} /></Box>
+                        <Box display='flex' flexDirection='column' alignContent='center' className={this.props.router.getStyles('appBackground')}
+                            style={{ position: 'absolute', top: '32px', width: '100%' }}
                         >
-                            <div>
-                                <div hidden={(this.state.slideStep === 0 ? false : true)}>
-                                    <Box display='flex' flexDirection='column'>
-                                        <Input
-                                            type="file"
-                                            inputProps={{ ref: this.fileInput, accept: 'audio/flac, audio/m4a, audio/wav, audio/mp3, audio/aac' }}
-                                            required={true}
-                                            onChange={this.handleFileSelect}
-                                            startAdornment={
-                                                <InputAdornment>
-                                                    <PublishIcon />
-                                                </InputAdornment>
-                                            }
-                                        />
-                                    </Box>
-                                </div>
-                                <div hidden={(this.state.slideStep === 1 ? false : true)}>
-                                    <Box display='flex' flexDirection='column'>
-                                        <TextField
-                                            label="Track Name"
-                                            name='trackName'
-                                            placeholder='. . .'
-                                            size='medium'
-                                            required='true'
-                                            value={this.state.trackName}
-                                            onChange={this.handleChange}
-                                        />
-                                        <TextField
-                                            label="Description"
-                                            name='trackDescription'
-                                            placeholder='. . .'
-                                            size='medium'
-                                            value={this.state.trackDescription}
-                                            onChange={this.handleChange}
-                                        />
-                                    </Box>
-                                </div>
-                                <div hidden={(this.state.slideStep === 2 ? false : true)}>
-                                    <Box display='flex' flexDirection='column'>
-                                        <div>
-                                            <FormControlLabel
-                                                control={<Checkbox id='0' name="Mixing" onChange={this.handleChange} />}
-                                                label="Mixing"
-                                            />
-                                            <FormControlLabel
-                                                control={<Checkbox id='1' name="Mastering" onChange={this.handleChange} />}
-                                                label="Mastering"
-                                            />
-                                            <FormControlLabel
-                                                control={<Checkbox id='2' name="Arrangement" onChange={this.handleChange} />}
-                                                label="Arrangement"
-                                            />
-                                            <FormControlLabel
-                                                control={<Checkbox name="other" onClick={() => { this.setState({ other: !this.state.other }) }} />}
-                                                label="Other"
-                                            />
-                                            <Collapse in={this.state.other ? true : false} display='flex' flexDirection='column'>
-                                                <div>Please specify "Other" tag (Limit 12 characters):</div>
-                                                <TextField
-                                                    name='metaDataOther'
-                                                    placeholder='. . .'
-                                                    size='medium'
-                                                    inputProps={{ maxLength: 12 }}
-                                                    value={this.state.metaDataOther}
-                                                    onChange={this.handleChange}
-                                                />
-                                            </Collapse>
-                                            <div hidden={(this.props.router.getUserID() ? false : true)}>
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            name="trackIsPublic"
-                                                            onClick={() => { this.setState({ trackIsPublic: !this.state.trackIsPublic }) }}
-                                                        />
-                                                    }
-                                                    label="Save track to account"
-                                                />
-                                            </div>
-                                        </div>
-                                        <Button onClick={this.handleMatch} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Match</Button>
-                                    </Box>
-                                </div>
-                                <div hidden={(this.state.slideStep === 3 ? false : true)}>
-                                    <Box display='flex' flexDirection='column' alignItems='center'>
-                                        <h2>{this.state.matchingStatus}</h2>
-                                        <CircularProgress />
-                                    </Box>
-                                </div>
-                                <div hidden={(this.state.slideStep === 4 ? false : true)}>
-                                    <Box display='flex' flexDirection='column'>
-                                        Please offer constructive criticism.
-                                        {this.state.trackMatchPlayer}
-                                        <Button onClick={this.finishReview} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Continue</Button>
-                                    </Box>
-                                </div>
-                                <div hidden={(this.state.slideStep === 5 ? false : true)}>
-                                    <Box display='flex' flexDirection='column'>
-                                        Your feedback is here:
-                                        {this.state.reviewedTrackPlayer}
-                                        <Button onClick={this.matchAgain} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Match Again</Button>
-                                        <div hidden={(this.props.router.getUserID() ? true : false)}>
-                                            <Button
-                                                onClick={() => {
-                                                    this.setState({ keepTracks: true },
-                                                        () => this.props.router.updateContent(<NewAccount router={this.props.router} anonymousID={this.state.anonymousID} />))
-                                                }
-                                                }
-                                                variant='outlined'
-                                                className={this.props.router.getStyles('b_MainWindow')}
-                                            >
-                                                Create An Account
-                                            </Button>
-                                        </div>
-                                    </Box>
-                                </div>
-                            </div>
-                        </Slide>
+                            <h3>{steps[this.state.activeStep]}</h3>
+                        </Box>
                     </Box>
-                    <Stepper
-                        activeStep={this.state.activeStep}
-                        alternativeLabel
-                        size='small'
-                    >
-                        {steps.map((label) => (
-                            <Step key={label}>
-                                <StepLabel orientation="vertical">{label}</StepLabel>
-                            </Step>
-                        ))}
-                    </Stepper>
 
+                    {/*Content and Prevew*/}
+                    <Box height='80%' display='flex' flexDirection='column' justifyContent='flex-start' alignItems='center' 
+                    marginTop='72px' marginBottom={isMobile ? '72px' : 0} style={{overflowY: 'auto'}}>
+                        <Box height={(this.state.slideStep >= 3) ? 0 : '40%'} display='flex' flexDirection='column' justifyContent='center' alignItems='center' marginTop='16px'>
+                            <div hidden={(this.state.slideStep >= 3) ? true : false}>
+                                <Collapse in={this.state.trackPreviewPlayer}>
+                                    <Box>{this.state.trackPreviewPlayer}</Box>
+                                </Collapse>
+                            </div>
+                        </Box>
+
+                        {/* Sliding Content */}
+                        <Box display='flex' width='80%' flexDirection='column' justifyContent='flex-start' alignSelf='center' marginTop='12px' marginBottom='68px'
+                        height='60%'>
+                            <Slide
+                                in={this.state.inProp}
+                                onExited={() => this.setState({ inProp: !this.state.inProp, slideStep: this.state.activeStep })}
+                                direction="up"
+                            >
+                                <div>
+                                    <div hidden={(this.state.slideStep === 0 ? false : true)}>
+                                        <Box display='flex' flexDirection='row' justifyContent='center'>
+                                            <Input
+                                                type="file"
+                                                inputProps={{ ref: this.fileInput, accept: 'audio/flac, audio/m4a, audio/wav, audio/mp3, audio/aac' }}
+                                                required={true}
+                                                onChange={this.handleFileSelect}
+                                                startAdornment={
+                                                    <InputAdornment>
+                                                        <PublishIcon />
+                                                    </InputAdornment>
+                                                }
+                                                style={{width: isMobile ? '90%' : '50%'}}
+                                            />
+                                        </Box>
+                                    </div>
+                                    <div hidden={(this.state.slideStep === 1 ? false : true)}>
+                                        <Box display='flex' flexDirection='column' alignItems='center'>
+                                            <TextField
+                                                label="Track Name"
+                                                name='trackName'
+                                                placeholder='. . .'
+                                                size='medium'
+                                                required='true'
+                                                value={this.state.trackName}
+                                                onChange={this.handleChange}
+                                                fullWidth
+                                                style={{width: isMobile ? '90%' : '50%'}}
+                                            />
+                                            <TextField
+                                                label="Description"
+                                                name='trackDescription'
+                                                placeholder='. . .'
+                                                size='medium'
+                                                value={this.state.trackDescription}
+                                                onChange={this.handleChange}
+                                                fullWidth
+                                                style={{width: isMobile ? '90%' : '50%'}}
+                                            />
+                                        </Box>
+                                    </div>
+                                    <div hidden={(this.state.slideStep === 2 ? false : true)}>
+                                        <Box display='flex' flexDirection='column' mt='12px'>
+                                            <div>
+                                                <FormControlLabel
+                                                    control={<Checkbox id='0' name="Mixing" onChange={this.handleChange} />}
+                                                    label="Mixing"
+                                                />
+                                                <FormControlLabel
+                                                    control={<Checkbox id='1' name="Mastering" onChange={this.handleChange} />}
+                                                    label="Mastering"
+                                                />
+                                                <FormControlLabel
+                                                    control={<Checkbox id='2' name="Arrangement" onChange={this.handleChange} />}
+                                                    label="Arrangement"
+                                                />
+                                                <FormControlLabel
+                                                    control={<Checkbox name="other" onClick={() => { this.setState({ other: !this.state.other }) }} />}
+                                                    label="Other"
+                                                />
+                                                <Collapse in={this.state.other ? true : false} display='flex' flexDirection='column'>
+                                                    <div style={{color: '#e6eaff'}}>Please specify "Other" tag (Limit 12 characters):</div>
+                                                    <TextField
+                                                        name='metaDataOther'
+                                                        placeholder='. . .'
+                                                        size='medium'
+                                                        inputProps={{ maxLength: 12 }}
+                                                        value={this.state.metaDataOther}
+                                                        onChange={this.handleChange}
+                                                    />
+                                                </Collapse>
+                                                <div hidden={(this.props.router.getUserID() ? false : true)}>
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox
+                                                                name="trackIsPublic"
+                                                                onClick={() => { this.setState({ trackIsPublic: !this.state.trackIsPublic }) }}
+                                                            />
+                                                        }
+                                                        label="Save track to account"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </Box>
+                                    </div>
+                                    <div hidden={(this.state.slideStep === 3 ? false : true)}>
+                                        <Box display='flex' flexDirection='column' alignItems='center'>
+                                            <h2 className={this.props.router.getStyles('appBackground')}>{this.state.matchingStatus}</h2>
+                                            <CircularProgress />
+                                        </Box>
+                                    </div>
+                                    <div hidden={(this.state.slideStep === 4 ? false : true)}>
+                                        <Box display='flex' flexDirection='column'>
+                                            <div style={{ color: '#e6eaff' }}>
+                                                You can click and drag to specify sections to comment on.
+                                                Please offer constructive criticism.
+                                            </div>
+                                            {this.state.trackMatchPlayer}
+
+                                            <div>
+                                                <Tooltip
+                                                    title='Please contribute feedback to continue'
+                                                    arrow={true}
+                                                    placement='right'
+                                                    disableHoverListener={this.state.sectionValid}
+                                                >
+                                                    <div>
+                                                        <Button onClick={this.finishReview} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}
+                                                            style={{ width: '50%' }}
+                                                            endIcon={<DoubleArrow />}
+                                                            disabled={!this.state.sectionValid}
+                                                        >
+                                                            Continue
+                                                        </Button>
+                                                    </div>
+                                                </Tooltip>
+                                            </div>
+                                        </Box>
+                                    </div>
+                                    <div hidden={(this.state.slideStep === 5 ? false : true)}>
+                                        <Box display='flex' flexDirection='column'>
+                                                {this.state.sectionValid ? 
+                                                <div>
+                                                    <div style={{color: '#e6eaff'}}>Your feedback is here:</div>
+                                                    {this.state.reviewedTrackPlayer} 
+                                                </div>
+                                                : 
+                                                <div>
+                                                    <Box mx={2} style={{color: '#e6eaff'}}>Matched user is still typing ...</Box>
+                                                    <Box mx={4}><CircularProgress /></Box>
+                                                </div>}
+                                            <div>
+                                                <Button onClick={this.matchAgain} variant='outlined' className={this.props.router.getStyles('b_MainWindow')}
+                                                style={{width:'50%'}}>
+                                                    Match Again
+                                                </Button>
+                                            </div>
+                                            <div hidden={(this.props.router.getUserID() ? true : false)}>
+                                                <Button
+                                                    onClick={() => {
+                                                        this.setState({ keepTracks: true },
+                                                            () => this.props.router.updateContent(<NewAccount router={this.props.router} anonymousID={this.state.anonymousID} />))
+                                                        }
+                                                    }
+                                                    variant='outlined'
+                                                    className={this.props.router.getStyles('b_MainWindow')}
+                                                    style={{width: '50%', marginTop: '12px'}}
+                                                >
+                                                    Create An Account
+                                                </Button>
+                                            </div>
+                                        </Box>
+                                    </div>
+
+                                    {/*Desktop Navigation*/}
+                                    <Box display={isMobile ? 'none' : 'flex'} flexDirection='row' justifyContent='space-evenly' alignContent='center' alignItems='center' width='100%'
+                                    paddingTop='24px'>
+                                        <Box width='30%'>
+                                            <div style={{ visibility: (this.state.activeStep === 0 || this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
+                                                <Button
+                                                    onClick={() => this.backButton()}
+                                                    startIcon={<NavigateBeforeRoundedIcon />}
+                                                    className={this.props.router.getStyles('b_MainWindow')}
+                                                    variant='outlined'
+                                                    fullWidth
+                                                >
+                                                    Back
+                                                </Button>
+                                            </div>
+                                        </Box>
+                                        <Box width='30%'>
+                                            <Tooltip
+                                                title='Please fill out all required fields'
+                                                arrow={true}
+                                                placement='right'
+                                                disableHoverListener={this.state.sectionValid || this.state.activeStep === 2}
+                                            >
+                                                <div style={{ visibility: (this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
+                                                    <Button
+                                                        disabled={!this.state.sectionValid && (this.state.activeStep !== 2)}
+                                                        onClick={(this.state.activeStep === 2) ? this.handleMatch : () => this.nextButton()}
+                                                        endIcon={<NavigateNextRoundedIcon />}
+                                                        className={this.props.router.getStyles('b_MainWindow')}
+                                                        variant='outlined'
+                                                        fullWidth
+                                                    >
+                                                        {(this.state.activeStep === 2) ? 'Match' : 'Next'}
+                                                    </Button>
+                                                </div>
+                                            </Tooltip>
+                                        </Box>
+                                    </Box>
+                                    
+                                </div>
+                            </Slide>
+                        </Box>
+                    </Box>
+
+                    {/* Stepper & Mobile Navigation */}
+                    {isMobile ? 
+                        <Box height='10%' minHeight='48px' display='flex' flexDirection='row' width='100%' justifyContent='flex-end' alignSelf='center' 
+                        alignItems='center' marginBottom='16px' className={this.props.router.getStyles('defaultBar')}
+                        style={{position: 'absolute', bottom: 0}}
+                        >
+                            <Box style={{width: '50%'}}>
+                                <div style={{ visibility: (this.state.activeStep === 0 || this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
+                                    <Button
+                                        onClick={() => this.backButton()}
+                                        startIcon={<NavigateBeforeRoundedIcon/>}
+                                        className={this.props.router.getStyles('b_AccentSecondary')}
+                                        fullWidth
+                                    >
+                                        Back
+                                    </Button>
+                                </div>
+                            </Box>
+                            <Divider orientation="vertical"  flexItem className={this.props.router.getStyles('blueGreyFade')}/>
+                            <Box style={{width:'50%'}}>
+                                <Tooltip
+                                    title='Please fill out all required fields'
+                                    arrow={true}
+                                    placement='right'
+                                    disableHoverListener={this.state.sectionValid}
+                                >
+                                    <div style={{ visibility: (this.state.activeStep >= 3 ? 'hidden' : 'visible') }}>
+                                        <Button
+                                            onClick={(this.state.activeStep === 2) ? this.handleMatch : () => this.nextButton()}
+                                            disabled={!this.state.sectionValid && (this.state.activeStep !== 2)}
+                                            endIcon={<NavigateNextRoundedIcon/>}
+                                            className={this.props.router.getStyles('b_AccentSecondary')}
+                                            fullWidth
+                                        >
+                                            {(this.state.activeStep === 2) ? 'Match' : 'Next'}
+                                        </Button>
+                                    </div>
+                                </Tooltip>
+                            </Box>
+                        
+
+                            <div>
+                                <MobileStepper
+                                    variant="progress"
+                                    steps={6}
+                                    activeStep={this.state.activeStep}
+                                    className={this.props.router.getStyles('defaultBar')}
+                                />
+                            </div>
+                        </Box>
+                        :
+                        <div>
+                            <Stepper
+                                activeStep={this.state.activeStep}
+                                alternativeLabel={true}
+                                className={this.props.router.getStyles('defaultBar')}
+                            >
+                                {steps.map((label) => (
+                                    <Step key={label}>
+                                        <StepLabel orientation="vertical">{label}</StepLabel>
+                                    </Step>
+                                ))}
+                            </Stepper>
+                        </div>
+                    }
                 </Box>
             </Grow>
         );

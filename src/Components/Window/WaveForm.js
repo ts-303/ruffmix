@@ -1,7 +1,10 @@
-import { Box, Button, Chip, CircularProgress, Collapse, IconButton, Paper, TextField, Tooltip } from '@material-ui/core';
+import { Box, Button, Chip, CircularProgress, Collapse, IconButton, Paper, TextField, Tooltip, Backdrop, Card, CardHeader, CardContent } from '@material-ui/core';
+import CancelIcon from '@material-ui/icons/Cancel';
 import DeleteOutlineIcon from '@material-ui/icons/DeleteOutline';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { Comment } from '@material-ui/icons';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
+import shadows from '@material-ui/core/styles/shadows';
 import PauseCircleOutlineRoundedIcon from '@material-ui/icons/PauseCircleOutlineRounded';
 import PlayCircleOutlineRoundedIcon from '@material-ui/icons/PlayCircleOutlineRounded';
 import SubdirectoryArrowRightIcon from '@material-ui/icons/SubdirectoryArrowRight';
@@ -15,6 +18,7 @@ import CommentObject from './CommentObject';
 import { UploadTrack } from './UploadTrack';
 import './WaveForm.css';
 import PropTypes from 'prop-types';
+import { AccountView } from './AccountView';
 
 /**
  * Displays the comment section of a Waveform component
@@ -48,6 +52,7 @@ export function CommentSection(args) {
  * @param {Function} args.setTime Callback function to be used when the user seeks on the Wavesurfer instance
  * @param {File} args.audiofile The audio file to be loaded into the Wavesurfer instance
  * @param {Function} args.setLoadingProgress Callback function to be used while the Wavesurfer instance is loading, receives integer loading progress (0..100)
+ * @param {Function} args.handleDestroy Callback function to be used when the Wavesurfer instance is to be destroyed, Ex. when the file is not found
  * @param {boolean} args.asPreview Omittable boolean to determine if this instance is to be used as a preview. Disables drag selection when set to true.
  * @param {Function} args.identifier Omittable callback function used to show the display name of a user when hovering the mouse over a commented region
  * @returns A new Wavesurfer instance
@@ -83,11 +88,12 @@ export function MakeWave(args) {
                 ]
             });
 
-            if (args.asPreview === false) wavesurfer.enableDragSelection({ color: 'hsla(400, 100%, 30%, 0.1)', id: 'dragSelection' });
+            if (args.asPreview === false) wavesurfer.enableDragSelection({ color: 'hsla(400, 100%, 30%, 0.3)', id: 'dragSelection' });
 
             wavesurfer.on('ready', () => args.handleReady(wavesurfer));
             wavesurfer.on('seek', () => args.setTime());
             wavesurfer.on('loading', (progress) => args.setLoadingProgress(progress));
+            wavesurfer.on('destroy', () => args.handleDestroy());
             //Draw user info over region
             wavesurfer.on('region-mouseenter', (region) => {
 
@@ -130,7 +136,18 @@ export function MakeWave(args) {
     
                         wavesurfer.load(url);
                     }).catch((error) => {
-                        alert('Waveform download error: ' + error);
+                        console.log('Waveform download error: ' + error);
+
+                        const checkExistsRef = firebase.database().ref('users/' + args.audiofile);
+
+                        checkExistsRef.limitToFirst(1).once("value", snapshot => {
+                            if (snapshot.exists()) {
+                                console.log("Removing blank database track entry at: " + checkExistsRef);
+                                checkExistsRef.remove().catch((error) => {console.log(error);});
+                                wavesurfer.destroy();
+                            }
+                        });
+
                     });
                 }  
             }
@@ -215,6 +232,14 @@ class WaveForm extends React.Component {
          * The ID of a user on Firebase
          */
         userID: PropTypes.string,
+        /**
+         * Optional bool that determines if the comment section is expanded, false by default
+         */
+        expanded: PropTypes.bool,
+        /**
+         * Optional bool that determines if user can comment on this track. Used only during match after receiving feedback
+         */
+         disableComment: PropTypes.bool,
     }
 
     constructor(props) {
@@ -222,7 +247,7 @@ class WaveForm extends React.Component {
 
         this.state = {
             playState: false,
-            expand: false,
+            expand: this.props.expanded ? true : false,
             isChild: this.props.isChild,
             trackIsPreview: (this.props.preview ? this.props.preview : false),
             commentArr: [],
@@ -240,13 +265,16 @@ class WaveForm extends React.Component {
             trackID: this.props.trackID,
             userID: this.props.userID,
             loadingProgress: 0,
+            loadingSuccess: true,
             regionIdentifier: '',
             authorControls: ((this.props.userID === this.props.router.getUserID()) ? true : false),
+            userWillDelete: false,
         };
         this.handleReady = this.handleReady.bind(this);
         this.setTime = this.setTime.bind(this);
         this.setLoadingProgress = this.setLoadingProgress.bind(this);
         this.setRegionIdentifier = this.setRegionIdentifier.bind(this);
+        this.handleDestroy = this.handleDestroy.bind(this);
     }
 
     /**
@@ -279,12 +307,18 @@ class WaveForm extends React.Component {
         else this.login();
     }
 
+    deleteCheck(props) {
+        if (props === true) this.deleteTrack();
+
+        this.setState({userWillDelete: false});
+    }
+
     /**
      * Deletes the track
      */
     deleteTrack() {
         if (this.state.authorControls) {
-            this.props.router.setLoadingState(true);
+            this.props.router.setLoadingState(true, 'Deleting track...');
 
             firebase.database().ref('users/' + this.state.userID + '/audio/' + this.state.folderID + '/' + this.state.trackID).remove().then(() => {
                 console.log('Deleted track from realtime DB');
@@ -292,9 +326,9 @@ class WaveForm extends React.Component {
                 alert('Realtime DB track delete error: ' + error)
             });
 
-            firebase.storage().ref().child('audio/' + this.state.folderID + '/' + this.state.trackID).delete().then(() => {
+            firebase.storage().ref().child(this.state.userID + '/audio/' + this.state.folderID + '/' + this.state.trackID).delete().then(() => {
                 console.log('Deleted track from storage');
-                this.state.controller.getTracks();
+                this.props.router.updateContent(<AccountView router={this.props.router} user={this.props.router.getUserID()} />);
             }).then(() => this.props.router.setLoadingState(false)).catch((error) => {
                 alert('Storage track delete error: ' + error)
             });
@@ -354,7 +388,7 @@ class WaveForm extends React.Component {
                                         end: endTime,
                                         resize: false,
                                         drag: false,
-                                        color: 'hsla(200, 50%, 70%, 0.4)',
+                                        color: 'hsla(200, 60%, 70%, 0.4)',
                                     });
                                 }
                             }
@@ -414,7 +448,7 @@ class WaveForm extends React.Component {
                                     start: startTime,
                                     end: endTime,
                                     resize: false,
-                                    color: 'hsla(400, 100%, 30%, 0.1)'
+                                    color: 'hsla(400, 100%, 30%, 0.2)'
                                 });
                             }
                         }
@@ -506,6 +540,10 @@ class WaveForm extends React.Component {
 
     }
 
+    getCommentCount() {
+        return this.state.commentArr.length;
+    }
+
     /**
      * Callback function used with MakeWave to set a track's loading progress 
      * @param {int} props The integer progress returned from the Wavesurfer instance
@@ -565,6 +603,7 @@ class WaveForm extends React.Component {
                     region.remove();
                     this.previewRegion();
                     this.checkRegions();
+                    if (this.state.expand === false) this.toggleExpand();
                 }
             });
 
@@ -633,24 +672,31 @@ class WaveForm extends React.Component {
         })
     }
 
-    //Displays the WaveForm either as a preview or with full content
+    /**
+     * Prevents rendering of the component when the audio file is not successfully loaded
+     */
+    handleDestroy() {
+        this.setState({loadingSuccess: false});
+    }
+
+    //Displays the WaveForm either as a preview or with full content when successfully loaded
     render() {
-        if (this.state.trackIsPreview) {
+        if (this.state.trackIsPreview && this.state.loadingSuccess) {
             return (
                 <Box>
-                    <Box display='flex' flexDirection='row' alignItems='center'>
+                    <Box display='flex' flexDirection='row' alignItems='center' justifyContent='center'>
                         <IconButton
                             onClick={() => { this.togglePlay() }}
                             size='small'
                             edge='start'
-                            style={{ marginRight: '5px'}}
+                            style={{ marginRight: '5px', color: '#90a4ae'}}
                             children={this.state.playState ?
                                 <PauseCircleOutlineRoundedIcon style={{ width: '64px', height: '64px' }} />
                                 : <PlayCircleOutlineRoundedIcon style={{ width: '64px', height: '64px' }} />
                             }
                         >
                         </IconButton>
-                        <Box width='400px'>
+                        <Box width={this.props.previewSize} style={{backgroundColor: '#90a4ae'}}>
                             <MakeWave
                                 isChild={false}
                                 playState={this.state.playState}
@@ -658,6 +704,7 @@ class WaveForm extends React.Component {
                                 setTime={this.setTime}
                                 audiofile={this.state.audioFile}
                                 setLoadingProgress={this.setLoadingProgress}
+                                handleDestroy={this.handleDestroy}
                             />
                         </Box>
                     </Box>
@@ -667,8 +714,8 @@ class WaveForm extends React.Component {
                 </Box>
             )
         }
-        else return (
-            <Box display='flex' flexDirection='column' padding='10px'>
+        else if (this.state.loadingSuccess) return (
+            <Box display='flex' flexDirection='column' padding='10px' style={{position: 'relative'}}>
                 <Box
                     style={{ display: this.state.isChild ? 'flex' : 'none' }}
                     paddingLeft='70%'
@@ -681,7 +728,7 @@ class WaveForm extends React.Component {
                     flexDirection='row'
                     justifyContent='flex-start'
                     paddingLeft='20%'
-                    style={{ display: this.state.isChild ? "none" : "true", }}
+                    style={{ display: this.state.isChild ? "none" : "true", color: '#90a4ae', fontSize: '20px'}}
                 >
                     {this.state.trackName + ' - ' + this.state.description}
                     <Paper style={{ position: 'fixed', left: this.state.regionIdentifier.xPos }}>
@@ -689,21 +736,36 @@ class WaveForm extends React.Component {
                     </Paper>
                 </Box>
                 <Box display='flex' flexDirection='row' alignItems='center' justifyContent='flex-end'>
+                    <Backdrop style={{ zIndex: '10', position: 'absolute' }} open={this.state.userWillDelete} component={this}>
+                        <Card
+                            style={{minWidth: '60%', minHeight: '60%', maxWidth: '70%', maxHeight: '70%', display: 'flex', flexDirection: 'column', 
+                            alignItems: 'center', justifyContent: 'space-evenly' }}
+                        >
+                            <Box mx='2%' style={{textAlign: 'center'}}>Are you sure you want to delete this track?</Box>
+                            <Box display='flex' flexDirection='row' justifyContent='space-evenly'>
+                                <Button variant='outlined' className={this.props.router.getStyles('b_Success')} onClick={() => this.deleteCheck(true)}>
+                                    <DeleteOutlineIcon /> Yes </Button>
+                                    <Box ml={2} mr={2}/>
+                                <Button variant='outlined' className={this.props.router.getStyles('b_Error')} onClick={() => this.deleteCheck(false)}>
+                                    <CancelIcon /> No </Button>
+                            </Box>
+                        </Card>
+                    </Backdrop>
                     <Box
-                        display='flex'
+                        display = {this.state.authorControls ? "flex" : "none" }
                         flexDirection='column'
                         alignItems='center'
                         justifyContent='space-between'
-                        style={{ visibility: this.state.authorControls ? "visible" : "hidden", zIndex: '2' }}
+                        style={{ zIndex: '2' }}
                     >
                         <Tooltip title='Upload a new version of this track' placement='left' arrow={true}>
                             <IconButton onClick={() => this.newTrackVersion()} style={{ display: this.state.isChild ? "none" : "true", }}>
-                                <SubdirectoryArrowRightIcon style={{ transform: 'scaleY(-1)' }} />
+                                <SubdirectoryArrowRightIcon style={{ transform: 'scaleY(-1)', color: '#90a4ae' }} />
                             </IconButton>
                         </Tooltip>
                         <Tooltip title='Delete this track' placement='left' arrow={true}>
-                            <IconButton onClick={() => this.deleteTrack()}>
-                                <DeleteOutlineIcon />
+                            <IconButton onClick={() => this.setState({userWillDelete: true})}>
+                                <DeleteOutlineIcon style={{color: '#90a4ae' }}/>
                             </IconButton>
                         </Tooltip>
                     </Box>
@@ -711,14 +773,14 @@ class WaveForm extends React.Component {
                         onClick={() => { this.togglePlay() }}
                         size='small'
                         edge='start'
-                        style={{ marginRight: '5px' }}
+                        style={{ marginRight: '5px', color: '#90a4ae'  }}
                         children={this.state.playState ?
                             <PauseCircleOutlineRoundedIcon style={{ width: this.state.isChild ? '48px' : '64px', height: this.state.isChild ? '48px' : '64px' }} />
                             : <PlayCircleOutlineRoundedIcon style={{ width: this.state.isChild ? '48px' : '64px', height: this.state.isChild ? '48px' : '64px' }} />
                         }
                     >
                     </IconButton>
-                    <Box width={this.state.isChild ? '60%' : '80%'}>
+                    <Box width={this.state.isChild ? '60%' : '80%'} style={{backgroundColor: '#90a4ae'}}>
                         <div>
                             <Box style={{ display: (this.state.loadingProgress === 100) ? "none" : "true", }} display='flex' justifyContent='center'>
                                 <CircularProgress />
@@ -733,22 +795,26 @@ class WaveForm extends React.Component {
                                     setLoadingProgress={this.setLoadingProgress}
                                     asPreview={this.state.trackIsPreview}
                                     identifier={this.setRegionIdentifier}
+                                    handleDestroy={this.handleDestroy}
                                 />
                             </div>
                         </div>
                     </Box>
                 </Box>
-                <Box marginTop='-3%' display='flex' flexDirection='row-reverse' style={{ zIndex: '1' }}>{this.state.currentTime}/{this.state.playerDuration}</Box>
+                <Box display='flex' flexDirection='row-reverse' style={{ zIndex: '1', color: 'white' }}>{this.state.currentTime}/{this.state.playerDuration}</Box>
                 <Box onClick={() => { this.toggleExpand() }} display='flex' flexDirection='row' justifyContent='flex-end' alignItems='center'>
                     <MetaDataSection array={this.state.metaData} />
                     <IconButton
                         onClick={() => { this.toggleExpand() }}
                         size='small'
                     >
-                        <ExpandMoreIcon style={{ width: '24px', height: '24px' }} />
+                        <Comment style={{color: '#90a4ae'}}/>
+                        <ExpandMoreIcon style={{ width: '24px', height: '24px', color: '#90a4ae', scale: this.state.expand ? '-1' : '1' }} />
                     </IconButton>
                 </Box>
-                <Collapse onClick={() => { if (!this.state.expand) this.toggleExpand() }} in={this.state.expand ? true : false} collapsedHeight={15}>
+                <Collapse onClick={() => { if (!this.state.expand) this.toggleExpand() }} in={this.state.expand ? true : false} collapsedHeight={15} 
+                marginBottom='12px'
+                >
                     <Box
                         display='flex'
                         marginLeft={this.state.isChild ? '40%' : '20%'}
@@ -757,35 +823,37 @@ class WaveForm extends React.Component {
                     >
                         <CommentSection commentArray={this.state.commentArr} player={this} router={this.props.router} />
                     </Box>
-                </Collapse>
-                <Box display='flex' flexDirection='row' justifyContent='flex-end' marginTop='4px'>
-                    <form onSubmit={this.handleCommentSubmit}>
-                        <Box display='flex' flexDirection='row' alignItems='flex-end' >
-                            <TextField
-                                label="New Comment"
-                                placeholder='. . .'
-                                require={true}
-                                value={this.state.commentContent}
-                                onChange={this.handleTextChange}
-                                size='small'
-                            />
-                            <Box mx={2}><Button size='small' type='submit' variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Submit</Button></Box>
-                            <Box>
-                                <Button
+                
+                    <Box display={this.props.disableComment ? 'none' : 'flex'} flexDirection='row' justifyContent='flex-end' marginTop='4px'>
+                        <form onSubmit={this.handleCommentSubmit}>
+                            <Box display='flex' flexDirection='row' alignItems='flex-end' >
+                                <TextField
+                                    label="New Comment"
+                                    placeholder='. . .'
+                                    require={true}
+                                    value={this.state.commentContent}
+                                    onChange={this.handleTextChange}
                                     size='small'
-                                    onClick={() => this.clearPreviewRegions()}
-                                    style={{ display: this.state.containsPreviews ? 'flex' : 'none' }}
-                                    className={this.props.router.getStyles('b_MainWindow')}
-                                >
-                                    Clear Regions
-                                </Button>
+                                />
+                                <Box mx={2}><Button size='small' type='submit' variant='outlined' className={this.props.router.getStyles('b_MainWindow')}>Submit</Button></Box>
+                                <Box>
+                                    <Button
+                                        size='small'
+                                        variant='outlined'
+                                        onClick={() => {this.clearPreviewRegions(); this.setState({commentContent: ''})}}
+                                        style={{ display: this.state.containsPreviews ? 'flex' : 'none',}}
+                                        className={this.props.router.getStyles('b_MainWindow')}
+                                    >
+                                        Clear
+                                    </Button>
+                                </Box>
                             </Box>
-                        </Box>
-                    </form>
-                </Box>
+                        </form>
+                    </Box>
+                </Collapse>
             </Box>
         );
-
+        else return <div></div>;
     }
 }
 

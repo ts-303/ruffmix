@@ -1,29 +1,74 @@
 .conversations {
     display: flex;
     flex-direction: row;
-    padding: 2%;
     height: 100%;
+    background-color: #2f384770;
+}
+
+.conversations-mobile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
 }
 
 .convo-section {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    font-family: "Century Gothic", Futura, sans-serif;
-    min-width: 30%;
+    width: 30%;
     font-size: 24px;
+    background-color: #2f3847;
+    color: #90a4ae;
+}
+
+.convo-section-mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 24px;
+    background-color: #2f3847;
+    color: #90a4ae;
+    min-height: 42px;
+}
+
+.convo-section-text {
+    margin-top: 6%;
+    margin-bottom: 6%;
+    margin-left: 6%;
 }
 
 .user-convo {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    margin-left: 2%;
-    margin-bottom: 4%;
-    min-width: 70%;
+    width: 70%;
+    margin: 2%;
+}
+
+.user-convo-mobile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background-color: #2f384770;
+}
+
+.textfield-mobile {
+    padding-left: 2%;
+    padding-right: 2%;
+    height: 15%;
+    background-color: #2f3847;
+    min-height: 60px;
+    position: 'absolute';
+    bottom: 0;
+    left: 0;
+    right: 0;
 }
 
 .MuiTableCell-root {
-    font-family: "Century Gothic", Futura, sans-serif;
     font-size: 16px;
 }

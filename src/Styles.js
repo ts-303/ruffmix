@@ -1,8 +1,10 @@
 import { alpha } from "@material-ui/core";
-import { amber, blueGrey } from '@material-ui/core/colors';
+import { amber, blue, blueGrey, green, red } from '@material-ui/core/colors';
+import theme from './Theme';
 
 const darkBlue = '#2f3847';
 const blueGreyFade = alpha(blueGrey[500], 0.15);
+const introBlueGreyFade = alpha(blueGrey[500], 0.45);
 const mainWindowBackground = '#fff';
 
 const styles = {
@@ -24,10 +26,14 @@ const styles = {
     },
 
     b_Introduction: {
-        color: darkBlue,
-        borderColor: blueGrey[300],
+        color: '#e6eaff',
+        borderColor: introBlueGreyFade,
         '&:hover': {
             borderColor: amber[500],
+            color: amber[500],
+            transition: theme.transitions.create(["color"], {
+                duration: 500
+            }),
         }
     },
 
@@ -37,7 +43,10 @@ const styles = {
         backgroundColor: blueGrey[50],
         '&:hover': {
             borderColor: amber[500],
-            backgroundColor: blueGrey[50],
+            color: amber[500],
+            transition: theme.transitions.create(["color"], {
+                duration: 500
+            }),
         }
     },
 
@@ -52,6 +61,24 @@ const styles = {
         color: blueGrey[300],
         '&:hover': {
             backgroundColor: blueGreyFade,
+        }
+    },
+
+    b_Success: {
+        color: green[400],
+        borderColor: green[400],
+        '&:hover': {
+            borderColor: green[200],
+            backgroundColor: green[50],
+        }
+    },
+
+    b_Error: {
+        color: red[400],
+        borderColor: red[400],
+        '&:hover': {
+            borderColor: red[200],
+            backgroundColor: red[50],
         }
     },
 
@@ -79,6 +106,14 @@ const styles = {
         }
     },
 
+    settingsMenu: {
+        color: '#e6eaff',
+        '& .MuiButton-root': {
+            color: blueGrey[300],
+        },
+       
+    },
+
     formContent: {
         '& .MuiFormControl-root': {
             marginTop: '10px',
@@ -86,8 +121,36 @@ const styles = {
         },
     },
 
+    primaryHighlight: {
+        color: amber[500],
+    },
+
     secondary: {
         color: blueGrey[300],
+    },
+
+    appBackground: {
+        color: '#e6eaff'
+    },
+
+    blueGreyFade: {
+        backgroundColor: introBlueGreyFade
+    },
+
+    defaultBar: {
+        color: blueGrey[300],
+        backgroundColor: darkBlue,
+        '& .MuiMobileStepper-progress' : {
+            width: '100%',
+            marginLeft: '2%',
+            marginRight: '2%'
+        },
+        '& .MuiStepLabel-label': {
+            color: blueGrey[300],
+        },
+        '& .MuiStepLabel-active': {
+            color: amber[600],
+        }
     },
 
     mainBackground: {

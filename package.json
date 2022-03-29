@@ -12,9 +12,11 @@
     "@testing-library/react": "^11.2.7",
     "@testing-library/user-event": "^12.8.3",
     "firebase": "^8.7.1",
+    "npm-watch": "^0.11.0",
     "peaks.js": "^0.26.0",
     "prop-types": "^15.8.0",
     "react": "^17.0.2",
+    "react-device-detect": "^2.1.2",
     "react-dom": "^17.0.2",
     "react-scripts": "^4.0.3",
     "react-wavesurfer": "^0.8.6",
@@ -24,6 +26,14 @@
     "wavesurfer.js": "^5.1.0",
     "web-vitals": "^1.1.2"
   },
+  "watch": {
+    "build": {
+        "patterns": [
+            "src"
+        ],
+        "extensions": "js, jsx"
+    }
+  },
   "scripts": {
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
@@ -31,7 +41,7 @@
     "eject": "react-scripts eject",
     "build:dev": "webpack --mode=development",
     "build:prod": "webpack --mode=production --node-env=production",
-    "watch": "webpack --watch",
+    "watch": "npm-watch",
     "serve": "webpack serve"
   },
   "eslintConfig": {
