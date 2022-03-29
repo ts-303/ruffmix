@@ -244,7 +244,7 @@ export class AccountView extends React.Component {
                                     <Grid container direction="column" spacing={2}>
                                         <Divider style={{marginTop: '10px', marginBottom: '10px'}}/>
                                         <Grid item><b>Genres</b></Grid>
-                                        <Grid item xs>Genre, list, items</Grid>
+                                        <Grid item xs>{this.state.userGenres}</Grid>
                                         <Divider style={{marginTop: '10px', marginBottom: '10px'}}/>
                                         <Grid item><b>Description</b></Grid>
                                         <Grid item xs style={{overflowWrap: 'anywhere'}}>{this.state.userDescription}</Grid>

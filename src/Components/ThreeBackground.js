@@ -21,7 +21,7 @@ export class ThreeBackground extends React.Component {
     const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1500 );
 
     const renderer = new THREE.WebGLRenderer( {alpha: true, antialias: true} );
-    renderer.setSize( window.innerWidth*0.6, window.innerHeight*0.7 );
+    renderer.setSize( window.innerWidth*0.7, window.innerHeight*0.7 );
     this.container.appendChild( renderer.domElement );
     window.addEventListener( 'resize', onWindowResize, false );
 
