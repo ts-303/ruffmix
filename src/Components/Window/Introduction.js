@@ -1,4 +1,4 @@
-import { Button, CardHeader, CardMedia } from '@material-ui/core';
+import { Button, CardHeader, CardMedia, Dialog, DialogContent, DialogTitle } from '@material-ui/core';
 import Box from '@material-ui/core/Box';
 import Grow from '@material-ui/core/Grow';
 import { DoubleArrow } from "@material-ui/icons";
@@ -14,6 +14,12 @@ import { isMobile } from 'react-device-detect';
  * or start a matching session.
  */
 export class Introduction extends React.Component {
+    constructor(props) {
+        super (props)
+        this.state = {
+            dialog: true
+        }
+    }
 
     newAccount = () => {
         this.props.router.updateContent(<NewAccount router={this.props.router}/>);
@@ -30,6 +36,43 @@ export class Introduction extends React.Component {
     render() {
         return (
             <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' overflow='auto'>
+                    <Dialog open={this.state.dialog && !this.props.router.getUserID()}>
+                        <DialogTitle>To Employers/Recruiters - Please Read</DialogTitle>
+                        <DialogContent>
+                            <div style={{textAlign: 'center', color: 'black'}}>
+                                Thank you for checking out my project!<br/>
+                                If you want to save some time, click on the following link 
+                                to watch a video summarizing the site's functions:<br/>
+                                <Box m={1}><a href="https://www.google.com/" target="_blank" rel="noopener noreferrer">
+                                    Demonstration on YouTube
+                                </a><br/></Box>
+                                A few notes:
+                                <div style={{textAlign: 'left'}}>
+                                    <ul>
+                                        <li>
+                                            Please be aware that as I am still learning, <b>I cannot yet guarantee data security at a professional level. </b>
+                                            Be wary of what credentials are used if you create an account, and what information is shared.
+                                        </li>
+                                        <li>
+                                            Ruffmix has some interactive functions that may not always be viewable when only one visitor is active.
+                                        </li>
+                                        <li>
+                                            For now, Ruffmix will be live and updated frequently for demonstration purposes only, and will likely be taken 
+                                            down if I find full-time employment that requires most of my time.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div style={{textAlign: 'center'}}><br/>-Tyler</div>
+                            <Box mt={2} display='flex' flexDirection='row' justifyContent='center'>
+                                <Button variant='outlined' onClick={() => this.setState({ dialog: false })}
+                                    className={this.props.router.getStyles('b_MainWindow')}
+                                >
+                                    Continue
+                                </Button>
+                            </Box>
+                        </DialogContent>
+                    </Dialog>
                 
                     <div style={{position: 'absolute', top: '-3%'}}>{(!isMobile) ? <ThreeBackground/> : <div/>}</div>
                     <Box m='1%' height="20%" style={{position: 'absolute', top: 0, left: 0, right:0, zIndex:0, textAlign: (isMobile) ? 'center' : ''}}>
