@@ -17,7 +17,7 @@ export class Introduction extends React.Component {
     constructor(props) {
         super (props)
         this.state = {
-            dialog: true
+            dialog: !this.props.router.getUserID()
         }
     }
 
@@ -36,15 +36,15 @@ export class Introduction extends React.Component {
     render() {
         return (
             <Box display='flex' flexDirection='column' justifyContent='space-between' height='100%' overflow='auto'>
-                    <Dialog open={this.state.dialog && !this.props.router.getUserID()}>
+                    <Dialog open={this.state.dialog}>
                         <DialogTitle>To Employers/Recruiters - Please Read</DialogTitle>
                         <DialogContent>
                             <div style={{textAlign: 'center', color: 'black'}}>
-                                Thank you for checking out my project!<br/>
+                                <b>Thank you for checking out my project!</b><br/>
                                 If you want to save some time, click on the following link 
-                                to watch a video summarizing the site's functions:<br/>
+                                to watch a brief video summarizing the site's functions:<br/>
                                 <Box m={1}><a href="https://www.google.com/" target="_blank" rel="noopener noreferrer">
-                                    Demonstration on YouTube
+                                    Demonstration on YouTube (~1min duration) 
                                 </a><br/></Box>
                                 A few notes:
                                 <div style={{textAlign: 'left'}}>
@@ -54,11 +54,12 @@ export class Introduction extends React.Component {
                                             Be wary of what credentials are used if you create an account, and what information is shared.
                                         </li>
                                         <li>
-                                            Ruffmix has some interactive functions that may not always be viewable when only one visitor is active.
+                                            Ruffmix has some interactive functions that may not always be viewable when only one visitor is active. The linked
+                                            video above shows all of the functions I think are most notable. 
                                         </li>
                                         <li>
                                             For now, Ruffmix will be live and updated frequently for demonstration purposes only, and will likely be taken 
-                                            down if I find full-time employment that requires most of my time.
+                                            down if I find employment that requires most of my time.
                                         </li>
                                     </ul>
                                 </div>

@@ -110,7 +110,7 @@ export class UploadTrack extends React.Component {
         //var newFileName = this.fileInput.current.files[0].name;
 
         const storageRef = firebase.storage().ref().child(this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
-        this.props.router.setLoadingState(true, 'Uploading track...');
+        this.props.router.setLoadingState(true);
 
         const newTrackRef = firebase.database().ref('users/' + this.state.userID + '/audio/' + newFolderID + '/' + newTrackID);
 
@@ -135,10 +135,9 @@ export class UploadTrack extends React.Component {
         var uploadTask = storageRef.put(newAudioFile);
 
         uploadTask.on('state_changed', function progress(snapshot) {
-            // var percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            // uploader.value = percentage;
+            this.props.router.setLoadingState(true, 'Uploading track... ' + parseInt((snapshot.bytesTransferred / snapshot.totalBytes) * 100) + '%');
 
-        }, function error(err) {
+        }.bind(this), function error(err) {
             newTrackRef.remove().catch(function (error) {
                 console.log("User DB cleanup fail: " + error.message)
             });
@@ -167,6 +166,7 @@ export class UploadTrack extends React.Component {
         const waveObj = <WaveForm
                         isChild={false}
                         preview={true}
+                        previewSize={isMobile ? window.innerWidth*0.7 : window.innerWidth*0.4}
                         controller={this}
                         router={this.props.router}
                         audiofile={args}

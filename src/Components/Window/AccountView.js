@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Collapse, Divider, Fade, Grid, IconButton, Slide, Table, TableBody, TableCell, TableRow, Typography } from "@material-ui/core";
+import { Avatar, Box, Button, CircularProgress, Collapse, Divider, Fade, Grid, IconButton, Slide, Table, TableBody, TableCell, TableRow, Typography } from "@material-ui/core";
 import React from "react";
 import firebase from "../../firebase";
 import './AccountView.css';
@@ -83,6 +83,7 @@ export class AccountView extends React.Component {
             userPrivacySettings: false,
             waveformArr: [],
             expand: isMobile ? false : true,
+            loadingAccount: true,
         };
 
         this.setPrevPlayer = this.setPrevPlayer.bind(this);
@@ -131,6 +132,7 @@ export class AccountView extends React.Component {
                 userLocation: userParse.location,
                 userAudio: userParse.audio,
                 userPrivacySettings: JSON.parse(userParse.privacysettings),
+                loadingAccount: false,
             }, () => {
                 userRef.off()
             });
@@ -256,12 +258,21 @@ export class AccountView extends React.Component {
                     </div>
                 </Box>
                 <Fade in={true} timeout={1000}>
-                    <Box className={isMobile ? 'user-track-mobile' : 'user-track'}>
-                        {( (this.props.user === this.props.router.getUserID()) 
-                            || ((firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])
-                            || (!(firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])) ? 
-                            <GetTracks tracks={this.state.userAudio} controller={this} router={this.props.router} /> : "Please sign in to view this user's tracks"}
-                    </Box>
+                    {
+                        this.state.loadingAccount ?
+                        <Box display='flex' flexDirection='column' justifyContent='center'>
+                            <CircularProgress />
+                            <div className={this.props.router.getStyles('appBackground')}>Loading User Account...</div>
+                        </Box>
+                        :
+                        <Box className={isMobile ? 'user-track-mobile' : 'user-track'}>
+                            {((this.props.user === this.props.router.getUserID())
+                                || ((firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])
+                                || (!(firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])) ?
+                                <GetTracks tracks={this.state.userAudio} controller={this} router={this.props.router} /> : "Please sign in to view this user's tracks"}
+
+                        </Box>
+                    }
                 </Fade>
             </div>
         );

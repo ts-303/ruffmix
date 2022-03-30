@@ -1,4 +1,4 @@
-import { CardHeader, Grid } from '@material-ui/core';
+import { CardHeader, CircularProgress, Grid } from '@material-ui/core';
 import Box from '@material-ui/core/Box';
 import Grow from '@material-ui/core/Grow';
 import firebase from "firebase";
@@ -23,6 +23,7 @@ export class BrowseUsers extends React.Component {
 
         this.state = {
             userList: [],
+            emptyList: true,
         }
     }
 
@@ -39,6 +40,7 @@ export class BrowseUsers extends React.Component {
         userRef.on('value', (snapshot) => {
             const users = snapshot.exportVal();
             this.getUsers(users);
+            this.setState({emptyList: false})
         });
 
     }
@@ -85,7 +87,15 @@ export class BrowseUsers extends React.Component {
                         <CardHeader className={this.props.router.getStyles('appBackground')} title="Recent Users" />
                     </Box>
                     <Grid height='80%' container justify="center" alignContent='center'>
-                        {this.state.userList}
+                        {
+                            this.state.emptyList ? 
+                            <Box display='flex' flexDirection='column' justifyContent='center'>
+                                <CircularProgress/>
+                                <div className={this.props.router.getStyles('appBackground')}>Populating User List...</div>
+                            </Box>
+                            : 
+                            this.state.userList
+                        }
                     </Grid>
                     <Box height='10%'/>
                 </Box>
