@@ -333,7 +333,15 @@ export class Match extends React.Component {
                     const storageRef = firebase.storage().ref().child(this.state.currentUserID + '/audio/' + newFolderID + '/' + newTrackID);
                     var newAudioFile = this.state.audioFile;
 
-                    storageRef.put(newAudioFile).then((snapshot) => {
+                    const storageTask = storageRef.put(newAudioFile);
+
+                    storageTask.on('state_changed', function progress(snapshot) {
+                        this.setState({
+                            matchingStatus: 'Uploading track... ' + parseInt((snapshot.bytesTransferred / snapshot.totalBytes) * 100) + '%'
+                        });
+                    }.bind(this));
+                    
+                    storageTask.then(() => {
                         if (this.state.currentUserID) {
                             console.log('File upload success');
 
@@ -398,6 +406,7 @@ export class Match extends React.Component {
                         this.cleanup(true);
                         alert('File Upload fail' + error);
                     });
+
                 });
             }
             else {

@@ -17,7 +17,7 @@ export class Introduction extends React.Component {
     constructor(props) {
         super (props)
         this.state = {
-            dialog: !this.props.router.getUserID()
+            dialog: false
         }
     }
 
@@ -31,6 +31,13 @@ export class Introduction extends React.Component {
 
     howItWorks = () => {
         this.props.router.updateContent(<HowItWorks router={this.props.router}/>);
+    }
+
+    componentDidMount() {
+        setTimeout( function() {
+            this.setState({dialog: !this.props.router.getUserID()})
+         }.bind(this), 500);
+        
     }
 
     render() {

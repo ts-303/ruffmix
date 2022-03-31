@@ -259,17 +259,19 @@ export class AccountView extends React.Component {
                 </Box>
                 <Fade in={true} timeout={1000}>
                     {
-                        this.state.loadingAccount ?
-                        <Box display='flex' flexDirection='column' justifyContent='center'>
-                            <CircularProgress />
-                            <div className={this.props.router.getStyles('appBackground')}>Loading User Account...</div>
-                        </Box>
-                        :
                         <Box className={isMobile ? 'user-track-mobile' : 'user-track'}>
-                            {((this.props.user === this.props.router.getUserID())
-                                || ((firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])
-                                || (!(firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])) ?
-                                <GetTracks tracks={this.state.userAudio} controller={this} router={this.props.router} /> : "Please sign in to view this user's tracks"}
+                            {
+                            (this.state.loadingAccount) ?
+                                <Box display='flex' flexDirection='column' justifyContent='center' m='auto' alignItems='center'>
+                                    <CircularProgress />
+                                    <div className={this.props.router.getStyles('appBackground')}>Loading User Account...</div>
+                                </Box>
+                                :
+                                ((this.props.user === this.props.router.getUserID())
+                                    || ((firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])
+                                    || (!(firebase.auth().currentUser && firebase.auth().currentUser.email) && this.state.userPrivacySettings['TracksPublic'])) ?
+                                    <GetTracks tracks={this.state.userAudio} controller={this} router={this.props.router} /> : "Please sign in to view this user's tracks"
+                            }
 
                         </Box>
                     }

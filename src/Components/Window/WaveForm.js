@@ -558,10 +558,11 @@ class WaveForm extends React.Component {
      * Callback function used with MakeWave to set the current time when a user seeks on the Wavesurfer instance
      */
     setTime() {
-        this.setState({
-            currentTime: new Date(this.state.playerObject.getCurrentTime() * 1000).toISOString().substr(11, 8),
-            playState: true
-        }, () => this.togglePlay(this.state.playerObject.getCurrentTime()))
+        if (this.state.playerObject)
+            this.setState({
+                currentTime: new Date(this.state.playerObject.getCurrentTime() * 1000).toISOString().substr(11, 8),
+                playState: true
+            }, () => this.togglePlay(this.state.playerObject.getCurrentTime()))
     }
 
     /**

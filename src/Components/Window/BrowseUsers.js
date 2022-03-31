@@ -89,7 +89,7 @@ export class BrowseUsers extends React.Component {
                     <Grid height='80%' container justify="center" alignContent='center'>
                         {
                             this.state.emptyList ? 
-                            <Box display='flex' flexDirection='column' justifyContent='center'>
+                            <Box display='flex' flexDirection='column' justifyContent='center' alignItems='center'>
                                 <CircularProgress/>
                                 <div className={this.props.router.getStyles('appBackground')}>Populating User List...</div>
                             </Box>
