@@ -1,17 +1,6 @@
-# 🚀 Welcome to your new awesome project!
+# Ruffmix - An instant feedback platform for music creators
+Ruffmix is a single-page web application intended to give music producers a quick and easy way to
+compare work and get helpful feedback, built using tools like React, Google Firebase, Material UI, and WaveSurfer.js.
 
-This project has been created using **webpack-cli**, you can now run
+For now, Ruffmix is being used for learning and to demonstrate my front end development capability.
 
-```
-npm run build
-```
-
-or
-
-```
-yarn build
-```
-
-to bundle your application
-
-First Deploy - Test 1
