@@ -140,11 +140,11 @@ export class MainWindowController extends React.Component {
             if (user && !user.isAnonymous) {
                 if (user) {
 
-                    firebase.database().ref('users/' + user.uid + '/displayname').once('value').then((data) => {
+                    firebase.database().ref('users/' + user.uid).once('value').then((data) => {
                         this.setState({
                             userID: user.uid,
-                            userEmail: user.email,
-                            userDisplayName: data.val(),
+                            userEmail: data.child('email').val(),
+                            userDisplayName: data.child('displayname').val(),
                             content: <AccountView user={user.uid} router={this} />,
                         }, () => this.refreshWindow());
                     });
