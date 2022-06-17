@@ -50,8 +50,8 @@ export class Introduction extends React.Component {
                                 <b>Thank you for checking out my project!</b><br/>
                                 If you want to save some time, click on the following link 
                                 to watch a brief video summarizing the site's functions:<br/>
-                                <Box m={1}><a href="https://www.google.com/" target="_blank" rel="noopener noreferrer">
-                                    Demonstration on YouTube (~1min duration) 
+                                <Box m={1}><a href="https://youtu.be/PU7Xga07Ik8 " target="_blank" rel="noopener noreferrer">
+                                    Demonstration on YouTube (~2 minute duration) 
                                 </a><br/></Box>
                                 A few notes:
                                 <div style={{textAlign: 'left'}}>
