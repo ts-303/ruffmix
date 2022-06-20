@@ -71,3 +71,6 @@ TODO.txt
 # Build and dist directories
 build/
 dist/
+
+# Firebase emulator configs
+firebase.json
